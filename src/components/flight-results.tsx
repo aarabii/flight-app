@@ -74,7 +74,9 @@ export function FlightResults({
   }, [flights, resultsCutoffMs]);
 
   const uniqueAircrafts = React.useMemo(() => {
-    const aircrafts = upcomingFlights.map((f) => f.aircraft_type).filter(Boolean);
+    const aircrafts = upcomingFlights
+      .map((f) => f.aircraft_type)
+      .filter(Boolean);
     return Array.from(new Set(aircrafts));
   }, [upcomingFlights]);
 
@@ -516,6 +518,7 @@ export function FlightResults({
             {/* Modal Body */}
             <div className="p-6 overflow-y-auto flex-grow">
               <SeatMap
+                key={activeFlight.id}
                 flightId={activeFlight.id}
                 flightNo={activeFlight.flight_no}
                 basePrice={Number(activeFlight.base_price)}
