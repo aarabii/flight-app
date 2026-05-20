@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils"
 import { useFlightStore } from "@/store/useFlightStore"
 import { useUserStore } from "@/store/useUserStore"
 import { useStoreHydration } from "@/store/useStoreHydration"
+import { bookSeat } from "@/app/actions/book-seat"
 
 interface SeatMapProps {
   flightId: string
@@ -116,6 +117,41 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
     fetchSeats()
   }, [flightId])
 
+  // Supabase Realtime subscription — keep seat map live (FIX 3)
+  React.useEffect(() => {
+    const supabase = createClient()
+    const channel = supabase.channel(`seats-realtime-${flightId}`)
+
+    channel
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'seats',
+          filter: `flight_id=eq.${flightId}`,
+        },
+        (payload) => {
+          const updatedSeat = payload.new as {
+            id: string
+            flight_id: string
+            seat_number: string
+            class: 'economy' | 'business' | 'first'
+            is_available: boolean
+            extra_fee: number
+          }
+          setSeats((prev) =>
+            prev.map((s) => (s.id === updatedSeat.id ? updatedSeat : s))
+          )
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [flightId])
+
   // Group seats by row number
   const groupedRows: { [key: number]: any[] } = {}
   seats.forEach((seat) => {
@@ -156,7 +192,7 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
     return Object.keys(errs).length === 0
   }
 
-  // Perform RPC seat booking
+  // Perform RPC seat booking via server action (FIX 1)
   const handleConfirmBooking = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user) return
@@ -165,22 +201,30 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
 
     setIsSubmitting(true)
     setSubmitError(null)
-    const supabase = createClient()
 
     try {
-      const { data, error } = await supabase.rpc("book_seat", {
-        p_flight_id: flightId,
-        p_seat_id: selectedSeat.id,
-        p_full_name: fullName,
-        p_passport_no: passportNo,
-        p_nationality: nationality,
-        p_dob: dob,
+      const result = await bookSeat({
+        flightId,
+        seatId: selectedSeat.id,
+        fullName,
+        passportNo,
+        nationality,
+        dob,
       })
 
-      if (error) {
-        setSubmitError(error.message)
+      if (result.error) {
+        // FIX 2 — Optimistic rollback on booking failure
+        setSelectedSeat(null)
+        setBookingStep('seating')
+        setSubmitError(result.error)
         setIsSubmitting(false)
       } else {
+        const data = result.data as {
+          booking_id: string
+          pnr_code: string
+          total_price: number
+          departs_at?: string
+        }
         // Cache the successful booking details instantly!
         const newBooking = {
           id: data.booking_id,
@@ -206,14 +250,18 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
             class: selectedSeat.class,
           }
         }
-        
+
         addCachedBooking(newBooking)
         setBookingSuccess(data)
         setBookingStep("confirmation")
         setIsSubmitting(false)
       }
-    } catch (err: any) {
-      setSubmitError(err.message || "An unexpected error occurred during visual ticketing.")
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "An unexpected error occurred during visual ticketing."
+      // FIX 2 — Optimistic rollback on unexpected error
+      setSelectedSeat(null)
+      setBookingStep('seating')
+      setSubmitError(message)
       setIsSubmitting(false)
     }
   }

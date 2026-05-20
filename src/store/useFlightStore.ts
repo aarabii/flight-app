@@ -3,6 +3,28 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
+export interface Flight {
+  id: string
+  flight_no: string
+  airline: string
+  origin: string
+  destination: string
+  departs_at: string
+  arrives_at: string
+  aircraft_type: string
+  status: 'scheduled' | 'delayed' | 'cancelled' | 'departed' | 'arrived'
+  base_price: number
+}
+
+export interface Seat {
+  id: string
+  flight_id: string
+  seat_number: string
+  class: 'economy' | 'business' | 'first'
+  is_available: boolean
+  extra_fee: number
+}
+
 export interface SearchState {
   origin: string
   destination: string
@@ -21,16 +43,16 @@ export type BookingStep = "search" | "seating" | "passenger" | "confirmation"
 
 export interface FlightStoreState {
   searchState: SearchState
-  selectedFlight: any | null
-  selectedSeat: any | null
+  selectedFlight: Flight | null
+  selectedSeat: Seat | null
   bookingStep: BookingStep
   passengerForm: PassengerForm
 }
 
 export interface FlightStoreActions {
   setSearchState: (search: Partial<SearchState>) => void
-  setSelectedFlight: (flight: any) => void
-  setSelectedSeat: (seat: any) => void
+  setSelectedFlight: (flight: Flight | null) => void
+  setSelectedSeat: (seat: Seat | null) => void
   setBookingStep: (step: BookingStep) => void
   updatePassengerForm: (form: Partial<PassengerForm>) => void
   resetBookingFlow: () => void

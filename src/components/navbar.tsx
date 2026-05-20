@@ -9,6 +9,7 @@ import { RiPlaneLine, RiTicketLine, RiUserLine, RiLogoutBoxRLine, RiMenuLine, Ri
 import { cn } from "@/lib/utils"
 
 import { useUserStore } from "@/store/useUserStore"
+import { useFlightStore } from "@/store/useFlightStore"
 import { useStoreHydration } from "@/store/useStoreHydration"
 
 export interface NavbarProps {
@@ -64,6 +65,8 @@ export function Navbar({ initialUser }: NavbarProps) {
 
   async function handleSignOut() {
     const supabase = createClient()
+    // FIX 5 (F12) — Clear stale Zustand flight/booking state before sign out
+    useFlightStore.getState().resetBookingFlow()
     await supabase.auth.signOut()
     clearSession()
     router.refresh()

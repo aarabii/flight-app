@@ -5,23 +5,29 @@ import { createClient } from "@/utils/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import Link from "next/link"
 import { RiPlaneLine, RiTicketLine, RiUserLine, RiCalendarLine, RiTimerLine, RiLoader4Line, RiAlertFill, RiCheckDoubleLine } from "@remixicon/react"
 import { useUserStore } from "@/store/useUserStore"
+import { useFlightStore } from "@/store/useFlightStore"
 import { useStoreHydration } from "@/store/useStoreHydration"
+import { cancelBooking } from "@/app/actions/cancel-booking"
 
 export default function BookingsPage() {
   const isHydrated = useStoreHydration(useUserStore, (state) => true) ?? false
   const cachedBookings = useUserStore((state) => state.cachedBookings)
   const setCachedBookings = useUserStore((state) => state.setCachedBookings)
   const updateCachedBookingStatus = useUserStore((state) => state.updateCachedBookingStatus)
+  const resetBookingFlow = useFlightStore((s) => s.resetBookingFlow)
 
   const [bookings, setBookings] = React.useState<any[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
@@ -102,45 +108,37 @@ export default function BookingsPage() {
     }
   }, [isHydrated, fetchBookings])
 
-  // Handle Cancellation Update
+  // Handle Cancellation via server action (FIX 4B)
   const handleCancelConfirm = async () => {
     if (!cancellingBooking) return
 
     setIsCancelling(true)
     setCancelError(null)
-    const supabase = createClient()
 
-    try {
-      // Perform database cancellation
-      const { error } = await supabase
-        .from("bookings")
-        .update({ status: "cancelled" })
-        .eq("id", cancellingBooking.id)
+    const result = await cancelBooking(cancellingBooking.id)
 
-      if (error) {
-        // Display PostgreSQL trigger exception message (e.g. less than 2 hours)
-        setCancelError(error.message)
-        setIsCancelling(false)
-      } else {
-        setCancelSuccess(true)
-        setIsCancelling(false)
-        
-        // Instantly update local store cache and local UI state
-        updateCachedBookingStatus(cancellingBooking.id, "cancelled")
-        setBookings((prev) =>
-          prev.map((b) => (b.id === cancellingBooking.id ? { ...b, status: "cancelled" } : b))
-        )
-        
-        // Refresh local listings after slight delay
-        setTimeout(() => {
-          setCancellingBooking(null)
-          setCancelSuccess(false)
-          fetchBookings()
-        }, 1500)
-      }
-    } catch (err: any) {
-      setCancelError(err.message || "Failed to cancel ticket. Please try again.")
+    if (result.error) {
+      setCancelError(result.error)
       setIsCancelling(false)
+    } else {
+      setCancelSuccess(true)
+      setIsCancelling(false)
+
+      // FIX 5 (F11) — Reset Zustand store after successful cancel
+      resetBookingFlow()
+
+      // Instantly update local store cache and local UI state
+      updateCachedBookingStatus(cancellingBooking.id, "cancelled")
+      setBookings((prev) =>
+        prev.map((b) => (b.id === cancellingBooking.id ? { ...b, status: "cancelled" } : b))
+      )
+
+      // Refresh local listings after slight delay
+      setTimeout(() => {
+        setCancellingBooking(null)
+        setCancelSuccess(false)
+        fetchBookings()
+      }, 1500)
     }
   }
 
@@ -316,14 +314,68 @@ export default function BookingsPage() {
                     </div>
                     
                     {!isCancelled && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCancellingBooking(booking)}
-                        className="w-full md:w-auto text-xs text-destructive hover:bg-destructive/5 hover:text-destructive border-destructive/20 cursor-pointer"
-                      >
-                        Cancel Booking
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setCancellingBooking(booking)
+                              setCancelError(null)
+                              setCancelSuccess(false)
+                            }}
+                            className="w-full md:w-auto text-xs text-destructive hover:bg-destructive/5 hover:text-destructive border-destructive/20 cursor-pointer"
+                          >
+                            Cancel Booking
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Cancel this booking?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. Your seat will be released.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+
+                          {cancelError && (
+                            <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-xs text-destructive border border-destructive/20 font-medium">
+                              <RiAlertFill className="h-4 w-4 shrink-0" />
+                              <span>{cancelError}</span>
+                            </div>
+                          )}
+
+                          {cancelSuccess && (
+                            <div className="flex items-center gap-2 rounded-lg bg-green-500/10 p-3 text-xs text-green-600 dark:text-green-400 border border-green-500/20 font-medium">
+                              <RiCheckDoubleLine className="h-4 w-4 shrink-0" />
+                              <span>Ticket cancelled. Seat released successfully!</span>
+                            </div>
+                          )}
+
+                          <div className="py-2 text-xs text-zinc-500 dark:text-zinc-400 space-y-1 bg-zinc-50 dark:bg-zinc-900 p-3 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50">
+                            <p className="font-bold text-zinc-700 dark:text-zinc-300">Cancellation Rule Checklist:</p>
+                            <p>• Bookings departing in less than 2 hours are locked and non-refundable.</p>
+                            <p>• Once cancelled, the seat map will be updated instantly for other travelers.</p>
+                          </div>
+
+                          <AlertDialogFooter>
+                            <AlertDialogCancel className="cursor-pointer">Keep Booking</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={handleCancelConfirm}
+                              disabled={isCancelling || cancelSuccess}
+                              className="font-semibold cursor-pointer"
+                            >
+                              {isCancelling ? (
+                                <span className="flex items-center gap-1.5">
+                                  <RiLoader4Line className="h-4 w-4 animate-spin" />
+                                  Cancelling...
+                                </span>
+                              ) : (
+                                "Confirm Cancel"
+                              )}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     )}
                   </div>
 
@@ -333,66 +385,6 @@ export default function BookingsPage() {
           })}
         </div>
       )}
-
-      {/* Booking Cancellation Dialog Modal */}
-      <Dialog open={cancellingBooking !== null} onOpenChange={(open) => !open && setCancellingBooking(null)}>
-        <DialogContent className="max-w-md border border-zinc-200 dark:border-zinc-800">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold font-heading text-zinc-900 dark:text-zinc-50">
-              Confirm Ticket Cancellation
-            </DialogTitle>
-            <DialogDescription className="text-xs text-zinc-500">
-              This action will release seat <span className="font-bold text-zinc-700 dark:text-zinc-300">{cancellingBooking?.seats?.seat_number}</span> and mark PNR <span className="font-extrabold text-primary tracking-widest">{cancellingBooking?.pnr_code}</span> as cancelled.
-            </DialogDescription>
-          </DialogHeader>
-
-          {cancelError && (
-            <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-xs text-destructive border border-destructive/20 font-medium">
-              <RiAlertFill className="h-4 w-4 shrink-0" />
-              <span>{cancelError}</span>
-            </div>
-          )}
-
-          {cancelSuccess && (
-            <div className="flex items-center gap-2 rounded-lg bg-green-500/10 p-3 text-xs text-green-600 dark:text-green-400 border border-green-500/20 font-medium">
-              <RiCheckDoubleLine className="h-4 w-4 shrink-0" />
-              <span>Ticket cancelled. Seat released successfully!</span>
-            </div>
-          )}
-
-          <div className="py-2 text-xs text-zinc-500 dark:text-zinc-400 space-y-1 bg-zinc-50 dark:bg-zinc-900 p-3 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50">
-            <p className="font-bold text-zinc-700 dark:text-zinc-300">Cancellation Rule Checklist:</p>
-            <p>• Bookings departing in less than 2 hours are locked and non-refundable.</p>
-            <p>• Once cancelled, the seat map will be updated instantly for other travelers.</p>
-          </div>
-
-          <DialogFooter className="flex flex-row gap-3 justify-end pt-4">
-            <Button
-              variant="ghost"
-              onClick={() => setCancellingBooking(null)}
-              disabled={isCancelling}
-              className="cursor-pointer"
-            >
-              Go Back
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleCancelConfirm}
-              disabled={isCancelling || cancelSuccess}
-              className="font-semibold cursor-pointer"
-            >
-              {isCancelling ? (
-                <span className="flex items-center gap-1.5">
-                  <RiLoader4Line className="h-4 w-4 animate-spin" />
-                  Cancelling...
-                </span>
-              ) : (
-                "Confirm Cancellation"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
     </div>
   )
