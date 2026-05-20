@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { SeatMap } from "@/components/seat-map";
+import { SeatMapContainer } from "@/components/seat-map-container";
 import { SearchPanel } from "@/components/search-panel";
 import {
   Select,
@@ -517,7 +517,7 @@ export function FlightResults({
 
             {/* Modal Body */}
             <div className="p-6 overflow-y-auto flex-grow">
-              <SeatMap
+              <SeatMapContainer
                 key={activeFlight.id}
                 flightId={activeFlight.id}
                 flightNo={activeFlight.flight_no}
