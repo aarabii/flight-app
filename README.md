@@ -1,36 +1,116 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AeroLux Airlines
 
-## Getting Started
+Flight booking app for searching flights, selecting seats, booking trips, and managing bookings with Supabase.
 
-First, run the development server:
+## Tech Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- `next` 16.2.6
+- `react` 19.2.4
+- `react-dom` 19.2.4
+- `@supabase/ssr` 0.10.3
+- `@supabase/supabase-js` 2.106.0
+- `zustand` 5.0.13
+- `zod` 4.4.3
+- `react-hook-form` 7.76.0
+- `@hookform/resolvers` 5.2.2
+- `date-fns` 4.2.1
+- `@remixicon/react` 4.9.0
+- `@radix-ui/react-slot` 1.2.4
+- `radix-ui` 1.4.3
+- `react-day-picker` 10.0.1
+- `class-variance-authority` 0.7.1
+- `clsx` 2.1.1
+- `tailwind-merge` 3.6.0
+- `tw-animate-css` 1.4.0
+- `shadcn` 4.7.0
+- `tailwindcss` 4
+- `@tailwindcss/postcss` 4
+- `eslint` 9
+- `eslint-config-next` 16.2.6
+- `typescript` 5
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Search flights from the home page.
+- Load search results on the server in the App Router.
+- Select seats with realtime updates on the seat map.
+- Create bookings through a server action.
+- Cancel bookings through a server action.
+- Reschedule confirmed bookings to alternative flights.
+- Sign up, sign in, and maintain Supabase auth sessions.
+- Persist flight and user state in Zustand.
+- Show bookings and booking history on the bookings page.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Local Setup
 
-## Learn More
+1. Clone the repository.
+2. Run `npm install`.
+3. Copy `.env.example` to `.env.local` and fill in the values.
+4. Get `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from the Supabase Dashboard under Project Settings > API. The publishable key can also be used as the anon/public key.
+5. Open the Supabase SQL Editor and run `supabase/migrations/001_initial.sql`.
+6. In the same SQL Editor, run `supabase/seed.sql`.
+7. Run `npm run dev`.
 
-To learn more about Next.js, take a look at the following resources:
+## Supabase Project Configuration
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Enable Realtime for the `seats` table in the Supabase Dashboard under Database > Replication. Add `public.seats` to the `supabase_realtime` publication if it is not already enabled.
+- Create the test user in Authentication > Users. Add `test@aerolux.com` with password `Test@12345`.
+- If you need the manual UUID for a seeded booking, copy it from the user row after creation.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Environment Variables
 
-## Deploy on Vercel
+- `NEXT_PUBLIC_SUPABASE_URL`: Supabase project URL used by browser and server clients.
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: Primary public Supabase key used by the app.
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Legacy fallback public key name supported by the Supabase client wrappers.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Zustand Store Structure
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### `useFlightStore`
+
+- `searchState`: current search form values. It stores origin, destination, date, class, and passenger count.
+- `selectedFlight`: flight selected during booking.
+- `selectedSeat`: seat selected during booking.
+- `bookingStep`: current booking step. Valid values are `search`, `seating`, `passenger`, and `confirmation`.
+- `passengerForm`: legacy single-passenger form state.
+- `passengerForms`: array of passenger forms for multi-passenger booking.
+- `setSearchState`: merges partial search updates into the existing search state.
+- `setSelectedFlight`: stores the active flight.
+- `setSelectedSeat`: stores the active seat.
+- `setBookingStep`: moves the booking flow between steps.
+- `updatePassengerForm`: updates the legacy single-passenger form.
+- `setPassengerForms`: replaces the passenger array.
+- `resetBookingFlow`: clears the selected seat and passenger form state and resets `bookingStep` to `seating`. It is called after a successful cancel to clear stale seat selection state.
+
+`passengerForms` excludes `passportNo` from localStorage because passport numbers are sensitive personal data and should not be persisted in browser storage.
+
+### `useUserStore`
+
+- `user`: minimal signed-in user data. It stores email and full name.
+- `cachedBookings`: client-side booking cache used to render the bookings page immediately after hydration.
+- `setUser`: stores or clears the current user.
+- `setCachedBookings`: replaces the booking cache.
+- `addCachedBooking`: prepends a new booking to the cache.
+- `updateCachedBookingStatus`: updates the status of one cached booking.
+- `clearSession`: clears the current user and cached bookings.
+
+## Database Schema
+
+- `flights`: scheduled flight records with route, times, aircraft type, base price, and status.
+- `seats`: seat inventory for each flight with seat number, class, availability, and extra fee.
+- `bookings`: booking records that link a user, flight, seat, status, total price, and PNR code.
+- `passengers`: passenger details attached to bookings.
+- `reschedules`: audit trail for booking reschedules with the old flight, new flight, and fee charged.
+
+## Known Gaps and Trade-offs
+
+- Git commit history is not granular.
+- The PWA task is not implemented.
+- Multi-passenger atomic booking is not implemented. Only the first passenger books the seat.
+- Rescheduling does not reassign a new seat on the replacement flight.
+- The reschedule write path uses separate inserts and updates instead of a single database transaction.
+- The client-side booking cache can briefly show stale data until the next refresh.
+
+## Test Credentials
+
+- Email: `test@aerolux.com`
+- Password: `Test@12345`
