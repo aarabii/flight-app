@@ -7,6 +7,13 @@ import { Card, CardContent } from "@/components/ui/card"
 import { SeatMap } from "@/components/seat-map"
 import { SearchPanel } from "@/components/search-panel"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   RiPlaneLine,
   RiSearchEyeLine,
   RiArrowLeftLine,
@@ -47,6 +54,52 @@ export function FlightResults({
   const setBookingStep    = useFlightStore((state) => state.setBookingStep)
   const setSearchState    = useFlightStore((state) => state.setSearchState)
 
+  // Local States
+  const [isEditingSearch, setIsEditingSearch] = React.useState(false)
+  const [sortBy, setSortBy] = React.useState<string>("price-asc")
+  const [selectedAircraft, setSelectedAircraft] = React.useState<string>("all")
+
+  // Filters and Sortings
+  const uniqueAircrafts = React.useMemo(() => {
+    const aircrafts = flights.map((f) => f.aircraft_type).filter(Boolean)
+    return Array.from(new Set(aircrafts))
+  }, [flights])
+
+  const filteredFlights = React.useMemo(() => {
+    return flights.filter((flight) => {
+      if (selectedAircraft !== "all" && flight.aircraft_type !== selectedAircraft) {
+        return false
+      }
+      return true
+    })
+  }, [flights, selectedAircraft])
+
+  const sortedFlights = React.useMemo(() => {
+    return [...filteredFlights].sort((a, b) => {
+      if (sortBy === "price-asc") {
+        return Number(a.base_price) - Number(b.base_price)
+      }
+      if (sortBy === "price-desc") {
+        return Number(b.base_price) - Number(a.base_price)
+      }
+      if (sortBy === "departs-asc") {
+        return new Date(a.departs_at).getTime() - new Date(b.departs_at).getTime()
+      }
+      if (sortBy === "departs-desc") {
+        return new Date(b.departs_at).getTime() - new Date(a.departs_at).getTime()
+      }
+      if (sortBy === "arrives-asc") {
+        return new Date(a.arrives_at).getTime() - new Date(b.arrives_at).getTime()
+      }
+      if (sortBy === "duration-asc") {
+        const durationA = new Date(a.arrives_at).getTime() - new Date(a.departs_at).getTime()
+        const durationB = new Date(b.arrives_at).getTime() - new Date(b.departs_at).getTime()
+        return durationA - durationB
+      }
+      return 0
+    })
+  }, [filteredFlights, sortBy])
+
   // Sync URL params back into the store so the rest of the booking flow has them
   React.useEffect(() => {
     if (!isHubSchedule && (origin || destination || dateStr || selectedClass || passengerCount)) {
@@ -80,69 +133,86 @@ export function FlightResults({
 
       {/* Query Search Panel Summary */}
       {(isHubSchedule ? destination : origin && destination) && (
-        <div className="p-6 rounded-xl border border-zinc-200/60 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold font-heading flex items-center gap-3">
-              {isHubSchedule ? (
-                <>
-                  <span>All Origins</span>
-                  <RiArrowRightLine className="h-5 w-5 text-primary" />
-                  <span>{destination.split(" ")[0]}</span>
-                </>
-              ) : (
-                <>
-                  <span>{origin.split(" ")[0]}</span>
-                  <RiArrowRightLine className="h-5 w-5 text-primary" />
-                  <span>{destination.split(" ")[0]}</span>
-                </>
-              )}
-            </h1>
-            <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-500 font-medium">
-              {!isHubSchedule && (
+        <div className="space-y-4">
+          <div className="p-6 rounded-xl border border-zinc-200/60 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div className="space-y-1">
+              <h1 className="text-2xl font-bold font-heading flex items-center gap-3">
+                {isHubSchedule ? (
+                  <>
+                    <span>All Origins</span>
+                    <RiArrowRightLine className="h-5 w-5 text-primary" />
+                    <span>{destination.split(" ")[0]}</span>
+                  </>
+                ) : (
+                  <>
+                    <span>{origin.split(" ")[0]}</span>
+                    <RiArrowRightLine className="h-5 w-5 text-primary" />
+                    <span>{destination.split(" ")[0]}</span>
+                  </>
+                )}
+              </h1>
+              <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-500 font-medium">
+                {!isHubSchedule && (
+                  <span className="flex items-center gap-1">
+                    <RiPlaneLine className="h-3.5 w-3.5 transform rotate-45" />
+                    {origin.includes("(") ? origin.substring(origin.indexOf("(")) : origin}
+                  </span>
+                )}
+                <span className="text-zinc-300">|</span>
                 <span className="flex items-center gap-1">
-                  <RiPlaneLine className="h-3.5 w-3.5 transform rotate-45" />
-                  {origin.substring(origin.indexOf("("))}
+                  <RiPlaneLine className="h-3.5 w-3.5 transform rotate-90" />
+                  {destination.includes("(") ? destination.substring(destination.indexOf("(")) : destination}
                 </span>
-              )}
-              <span className="text-zinc-300">|</span>
-              <span className="flex items-center gap-1">
-                <RiPlaneLine className="h-3.5 w-3.5 transform rotate-90" />
-                {destination.substring(destination.indexOf("("))}
+                {isHubSchedule ? (
+                  <>
+                    <span className="text-zinc-300">|</span>
+                    <span className="flex items-center gap-1">
+                      <RiCalendarLine className="h-3.5 w-3.5" />
+                      Upcoming schedules
+                    </span>
+                  </>
+                ) : dateStr && (
+                  <>
+                    <span className="text-zinc-300">|</span>
+                    <span className="flex items-center gap-1">
+                      <RiCalendarLine className="h-3.5 w-3.5" />
+                      {new Date(dateStr).toLocaleDateString("en-US", {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </>
+                )}
+                <span className="text-zinc-300">|</span>
+                <span className="flex items-center gap-1">
+                  <RiGroupLine className="h-3.5 w-3.5" />
+                  {passengerCount} {passengerCount === 1 ? "Passenger" : "Passengers"}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="inline-flex px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-bold uppercase tracking-wider text-primary">
+                {selectedClass} Class
               </span>
-              {isHubSchedule ? (
-                <>
-                  <span className="text-zinc-300">|</span>
-                  <span className="flex items-center gap-1">
-                    <RiCalendarLine className="h-3.5 w-3.5" />
-                    Upcoming schedules
-                  </span>
-                </>
-              ) : dateStr && (
-                <>
-                  <span className="text-zinc-300">|</span>
-                  <span className="flex items-center gap-1">
-                    <RiCalendarLine className="h-3.5 w-3.5" />
-                    {new Date(dateStr).toLocaleDateString("en-US", {
-                      weekday: "short",
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </span>
-                </>
-              )}
-              <span className="text-zinc-300">|</span>
-              <span className="flex items-center gap-1">
-                <RiGroupLine className="h-3.5 w-3.5" />
-                {passengerCount} {passengerCount === 1 ? "Passenger" : "Passengers"}
-              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditingSearch(!isEditingSearch)}
+                className="gap-1.5 font-semibold cursor-pointer border-primary/20 text-primary hover:bg-primary/5 h-8 text-xs"
+              >
+                <RiSearchEyeLine className="h-3.5 w-3.5 text-primary" />
+                {isEditingSearch ? "Hide Search Bar" : "Modify Search"}
+              </Button>
             </div>
           </div>
-          <div className="text-right">
-            <span className="inline-flex px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-bold uppercase tracking-wider text-primary">
-              {selectedClass} Class
-            </span>
-          </div>
+
+          {isEditingSearch && (
+            <div className="animate-in slide-in-from-top-4 duration-350">
+              <SearchPanel className="mt-0" />
+            </div>
+          )}
         </div>
       )}
 
@@ -185,13 +255,53 @@ export function FlightResults({
           </Card>
         ) : (
           // Flight Results Board
-          <div className="space-y-4">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-400">
-              Available Departures ({flights.length})
-            </h2>
+          <div className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-200/50 dark:border-zinc-800/50 pb-4">
+              <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-400">
+                Available Departures ({sortedFlights.length})
+              </h2>
+
+              <div className="flex flex-wrap items-center gap-4">
+                {/* Aircraft Type Filter */}
+                {uniqueAircrafts.length > 1 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-500">Aircraft:</span>
+                    <Select value={selectedAircraft} onValueChange={setSelectedAircraft}>
+                      <SelectTrigger className="w-[140px] h-8 text-xs border border-zinc-200/60 dark:border-zinc-800/60 bg-white/70 dark:bg-zinc-900/70 cursor-pointer rounded-lg px-2">
+                        <SelectValue placeholder="All Aircrafts" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg">
+                        <SelectItem value="all">All Aircrafts</SelectItem>
+                        {uniqueAircrafts.map(ac => (
+                          <SelectItem key={ac} value={ac}>{ac}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Sort Option */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-500">Sort By:</span>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-[180px] h-8 text-xs border border-zinc-200/60 dark:border-zinc-800/60 bg-white/70 dark:bg-zinc-900/70 cursor-pointer rounded-lg px-2">
+                      <SelectValue placeholder="Sort by..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg">
+                      <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                      <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                      <SelectItem value="departs-asc">Departure: Earliest</SelectItem>
+                      <SelectItem value="departs-desc">Departure: Latest</SelectItem>
+                      <SelectItem value="arrives-asc">Arrival: Earliest</SelectItem>
+                      <SelectItem value="duration-asc">Duration: Shortest</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
 
             <div className="space-y-4">
-              {flights.map((flight) => {
+              {sortedFlights.map((flight) => {
                 const displayOrigin = flight.origin || origin
                 const displayDestination = flight.destination || destination
                 const depDate = new Date(flight.departs_at)

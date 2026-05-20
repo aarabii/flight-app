@@ -45,6 +45,7 @@ export interface FlightStoreState {
   searchState: SearchState
   selectedFlight: Flight | null
   selectedSeat: Seat | null
+  selectedSeats: Seat[]
   bookingStep: BookingStep
   /** Legacy single-passenger field — kept so existing code that reads
    *  passengerForm does not break. Superseded by passengerForms. */
@@ -57,6 +58,7 @@ export interface FlightStoreActions {
   setSearchState: (search: Partial<SearchState>) => void
   setSelectedFlight: (flight: Flight | null) => void
   setSelectedSeat: (seat: Seat | null) => void
+  setSelectedSeats: (seats: Seat[]) => void
   setBookingStep: (step: BookingStep) => void
   updatePassengerForm: (form: Partial<PassengerForm>) => void
   setPassengerForms: (forms: PassengerForm[]) => void
@@ -82,6 +84,7 @@ export const useFlightStore = create<FlightStoreState & FlightStoreActions>()(
       },
       selectedFlight: null,
       selectedSeat: null,
+      selectedSeats: [],
       bookingStep: "search",
       passengerForm: emptyPassenger(),
       passengerForms: [emptyPassenger()],
@@ -92,7 +95,16 @@ export const useFlightStore = create<FlightStoreState & FlightStoreActions>()(
         })),
 
       setSelectedFlight: (flight) => set({ selectedFlight: flight }),
-      setSelectedSeat: (seat) => set({ selectedSeat: seat }),
+      setSelectedSeat: (seat) =>
+        set((state) => ({
+          selectedSeat: seat,
+          selectedSeats: seat ? [seat] : [],
+        })),
+      setSelectedSeats: (seats) =>
+        set((state) => ({
+          selectedSeats: seats,
+          selectedSeat: seats[0] || null,
+        })),
       setBookingStep: (step) => set({ bookingStep: step }),
 
       updatePassengerForm: (form) =>
@@ -105,6 +117,7 @@ export const useFlightStore = create<FlightStoreState & FlightStoreActions>()(
       resetBookingFlow: () =>
         set((state) => ({
           selectedSeat: null,
+          selectedSeats: [],
           passengerForm: emptyPassenger(),
           passengerForms: Array.from(
             { length: state.searchState.passengerCount },
@@ -119,6 +132,7 @@ export const useFlightStore = create<FlightStoreState & FlightStoreActions>()(
         searchState: state.searchState,
         selectedFlight: state.selectedFlight,
         selectedSeat: state.selectedSeat,
+        selectedSeats: state.selectedSeats,
         bookingStep: state.bookingStep,
         // Strip passportNo from all passenger form entries before persisting
         passengerForm: { ...state.passengerForm, passportNo: "" },

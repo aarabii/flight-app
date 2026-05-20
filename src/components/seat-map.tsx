@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
 import { useFlightStore } from "@/store/useFlightStore"
 import { useUserStore } from "@/store/useUserStore"
 import { useStoreHydration } from "@/store/useStoreHydration"
-import { bookSeat } from "@/app/actions/book-seat"
+import { bookSeat, bookSeats } from "@/app/actions/book-seat"
 
 interface Seat {
   id: string
@@ -54,6 +54,10 @@ export function SeatMap({ flightId, flightNo, basePrice, origin, destination, on
   const selectedSeat = storeSelectedSeat !== undefined ? storeSelectedSeat : null
   const setSelectedSeat = useFlightStore((state) => state.setSelectedSeat)
 
+  const storeSelectedSeats = useStoreHydration(useFlightStore, (state) => state.selectedSeats)
+  const selectedSeats = storeSelectedSeats !== undefined ? storeSelectedSeats : []
+  const setSelectedSeats = useFlightStore((state) => state.setSelectedSeats)
+
   const storePassengerForms = useStoreHydration(useFlightStore, (state) => state.passengerForms)
   const setPassengerForms = useFlightStore((state) => state.setPassengerForms)
 
@@ -91,9 +95,9 @@ export function SeatMap({ flightId, flightNo, basePrice, origin, destination, on
     )
 
   React.useEffect(() => {
-    setSelectedSeat(null)
+    setSelectedSeats([])
     setBookingStep("seating")
-  }, [flightId, setBookingStep, setSelectedSeat])
+  }, [flightId, setBookingStep, setSelectedSeats])
 
   // Local array state — one entry per passenger
   const [passengers, setPassengers] = React.useState<PassengerForm[]>(() =>
@@ -146,13 +150,13 @@ export function SeatMap({ flightId, flightNo, basePrice, origin, destination, on
     field: "fullName" | "passportNo" | "nationality" | "dob",
     value: string
   ) => {
-    setPassengers((prev) => {
-      const updated = [...prev]
+    const updated = [...passengers]
+    if (updated[index]) {
       updated[index] = { ...updated[index], [field]: value }
+      setPassengers(updated)
       // Sync to store (strips passportNo via partialize)
       setPassengerForms(updated)
-      return updated
-    })
+    }
   }
 
   // Fetch seat map on flightId changes
@@ -242,10 +246,19 @@ export function SeatMap({ flightId, flightNo, basePrice, origin, destination, on
   // Handle seat click
   const handleSelectSeat = (seat: Seat) => {
     if (!seat.is_available) return
-    const nextSeat = selectedSeat?.id === seat.id ? null : seat
-    setSelectedSeat(nextSeat)
+    const isAlreadySelected = selectedSeats.some((s) => s.id === seat.id)
+    let nextSeats = [...selectedSeats]
+    if (isAlreadySelected) {
+      nextSeats = nextSeats.filter((s) => s.id !== seat.id)
+    } else {
+      if (nextSeats.length >= passengerCount) {
+        nextSeats.shift() // Shift oldest selected seat to make room
+      }
+      nextSeats.push(seat)
+    }
+    setSelectedSeats(nextSeats)
     setSubmitError(null)
-    if (nextSeat) {
+    if (nextSeats.length === passengerCount) {
       setBookingStep("passenger")
     } else {
       setBookingStep("seating")
@@ -254,9 +267,8 @@ export function SeatMap({ flightId, flightNo, basePrice, origin, destination, on
 
   // Submission & screen states
   const [isSubmitting, setIsSubmitting] = React.useState(false)
-  const [bookingSuccess, setBookingSuccess] = React.useState<
-    { booking_id: string; pnr_code: string; total_price: number; departs_at?: string } | null
-  >(null)
+  const [bookingSuccess, setBookingSuccess] = React.useState<BookingResult[] | null>(null)
+  const [activeTicketIndex, setActiveTicketIndex] = React.useState(0)
   const [submitError, setSubmitError] = React.useState<string | null>(null)
   const [formErrors, setFormErrors] = React.useState<{ [key: string]: string }>({})
 
@@ -278,66 +290,74 @@ export function SeatMap({ flightId, flightNo, basePrice, origin, destination, on
   const handleConfirmBooking = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user) return
-    if (!selectedSeat) return
+    if (selectedSeats.length !== passengerCount) return
     if (!validateForm()) return
 
     setIsSubmitting(true)
     setSubmitError(null)
 
     try {
-      // Always book the primary passenger (index 0) — multi-seat booking is out of scope
-      const primary = passengers[0]
-      const result = await bookSeat({
+      const bookings = passengers.map((p, i) => ({
+        seatId: selectedSeats[i].id,
+        fullName: p.fullName,
+        passportNo: p.passportNo,
+        nationality: p.nationality,
+        dob: p.dob,
+      }))
+
+      const result = await bookSeats({
         flightId,
-        seatId: selectedSeat.id,
-        fullName: primary.fullName,
-        passportNo: primary.passportNo,
-        nationality: primary.nationality,
-        dob: primary.dob,
+        bookings,
       })
 
       if (result.error) {
         // FIX 2 — Optimistic rollback on booking failure
-        setSelectedSeat(null)
+        setSelectedSeats([])
         setBookingStep('seating')
         setSubmitError(result.error)
         setIsSubmitting(false)
       } else {
-        const data = result.data as BookingResult
+        const dataList = result.data as BookingResult[]
+        
         // Cache the successful booking details instantly!
-        const newBooking = {
-          id: data.booking_id,
-          pnr_code: data.pnr_code,
-          total_price: data.total_price,
-          status: "confirmed",
-          created_at: new Date().toISOString(),
-          flight: {
-            id: flightId,
-            flight_no: flightNo,
-            origin: origin,
-            destination: destination,
-            departs_at: data.departs_at || new Date().toISOString(),
-          },
-          passenger: {
-            full_name: passengers[0].fullName,
-            nationality: passengers[0].nationality,
-            dob: passengers[0].dob,
-          },
-          seat: {
-            seat_number: selectedSeat.seat_number,
-            class: selectedSeat.class,
+        dataList.forEach((data, index) => {
+          const seat = selectedSeats[index]
+          const passenger = passengers[index]
+          const newBooking = {
+            id: data.booking_id,
+            pnr_code: data.pnr_code,
+            total_price: data.total_price,
+            status: "confirmed",
+            created_at: new Date().toISOString(),
+            flight: {
+              id: flightId,
+              flight_no: flightNo,
+              origin: origin,
+              destination: destination,
+              departs_at: data.departs_at || new Date().toISOString(),
+            },
+            passenger: {
+              full_name: passenger.fullName,
+              nationality: passenger.nationality,
+              dob: passenger.dob,
+            },
+            seat: {
+              seat_number: seat.seat_number,
+              class: seat.class,
+            }
           }
-        }
+          addCachedBooking(newBooking)
+        })
 
-        addCachedBooking(newBooking)
-        setBookingSuccess(data)
+        setBookingSuccess(dataList)
         setBookingStep("confirmation")
+        setActiveTicketIndex(0)
         setIsSubmitting(false)
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "An unexpected error occurred during visual ticketing."
       // FIX 2 — Optimistic rollback on unexpected error
-      setSelectedSeat(null)
+      setSelectedSeats([])
       setBookingStep('seating')
       setSubmitError(message)
       setIsSubmitting(false)
@@ -346,6 +366,11 @@ export function SeatMap({ flightId, flightNo, basePrice, origin, destination, on
 
   // SUCCESS STATE VIEW
   if (bookingSuccess) {
+    const totalPaid = bookingSuccess.reduce((sum, b) => sum + Number(b.total_price), 0)
+    const activeTicket = bookingSuccess[activeTicketIndex]
+    const activeSeat = selectedSeats[activeTicketIndex]
+    const activePassenger = passengers[activeTicketIndex]
+
     return (
       <div className="text-center p-8 space-y-6 animate-in fade-in zoom-in-95 duration-300">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-500/10 text-green-500 border border-green-500/20">
@@ -354,26 +379,46 @@ export function SeatMap({ flightId, flightNo, basePrice, origin, destination, on
         <div className="space-y-2">
           <h3 className="text-2xl font-bold font-heading text-zinc-900 dark:text-zinc-50">Booking Confirmed!</h3>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Your seat locks and passenger boarding records have settled atomically.
+            All {passengerCount} seat locks and passenger boarding records have settled atomically.
           </p>
         </div>
 
+        {/* Passenger Pill Selector */}
+        {bookingSuccess.length > 1 && (
+          <div className="flex flex-wrap items-center justify-center gap-2 max-w-md mx-auto">
+            {bookingSuccess.map((ticket, index) => (
+              <button
+                key={index}
+                onClick={() => setActiveTicketIndex(index)}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer",
+                  activeTicketIndex === index
+                    ? "bg-primary border-primary text-white shadow-md shadow-primary/20 scale-105"
+                    : "bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                )}
+              >
+                {passengers[index]?.fullName.split(" ")[0] || `Passenger ${index + 1}`} ({selectedSeats[index]?.seat_number})
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Ticket Board */}
-        <div className="max-w-md mx-auto border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-lg bg-zinc-50 dark:bg-zinc-900 font-sans">
+        <div className="max-w-md mx-auto border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-lg bg-zinc-50 dark:bg-zinc-900 font-sans relative transition-all duration-300">
           <div className="bg-primary px-6 py-3 text-white text-left flex justify-between items-center">
             <span className="font-bold text-sm tracking-widest">{flightNo}</span>
             <span className="text-xs bg-white/20 px-2.5 py-0.5 rounded-full font-bold uppercase">
-              {selectedSeat?.class} Class
+              {activeSeat?.class} Class
             </span>
           </div>
           <div className="p-6 text-left grid grid-cols-2 gap-4 border-b border-dashed border-zinc-200 dark:border-zinc-800">
             <div>
               <p className="text-[10px] text-zinc-400 font-semibold uppercase">Passenger</p>
-              <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200">{passengers[0]?.fullName}</p>
+              <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate">{activePassenger?.fullName}</p>
             </div>
             <div>
               <p className="text-[10px] text-zinc-400 font-semibold uppercase">PNR Code</p>
-              <p className="text-sm font-extrabold text-primary tracking-widest">{bookingSuccess.pnr_code}</p>
+              <p className="text-sm font-extrabold text-primary tracking-widest">{activeTicket?.pnr_code}</p>
             </div>
             <div>
               <p className="text-[10px] text-zinc-400 font-semibold uppercase">Route</p>
@@ -381,13 +426,21 @@ export function SeatMap({ flightId, flightNo, basePrice, origin, destination, on
             </div>
             <div>
               <p className="text-[10px] text-zinc-400 font-semibold uppercase">Seat</p>
-              <p className="text-sm font-extrabold text-zinc-800 dark:text-zinc-200">{selectedSeat?.seat_number}</p>
+              <p className="text-sm font-extrabold text-zinc-800 dark:text-zinc-200">{activeSeat?.seat_number}</p>
             </div>
           </div>
           <div className="p-4 bg-zinc-100/50 dark:bg-zinc-900/50 text-center flex justify-between px-6 text-xs text-zinc-500">
-            <span>Price Paid: ₹{Number(bookingSuccess.total_price).toLocaleString("en-IN")}</span>
+            <span>Ticket Price: ₹{Number(activeTicket?.total_price).toLocaleString("en-IN")}</span>
             <span className="font-medium text-green-600 dark:text-green-400">Paid - Confirmed</span>
           </div>
+        </div>
+
+        {/* Total Pricing paid details */}
+        <div className="max-w-md mx-auto p-4 rounded-xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 text-sm flex justify-between items-center">
+          <span className="text-zinc-500 font-medium">Total Paid ({passengerCount} Passengers):</span>
+          <span className="font-extrabold text-zinc-800 dark:text-zinc-100 text-lg">
+            ₹{totalPaid.toLocaleString("en-IN")}
+          </span>
         </div>
 
         <div className="pt-4 flex justify-center gap-4">
@@ -505,7 +558,7 @@ export function SeatMap({ flightId, flightNo, basePrice, origin, destination, on
                           {/* Left Seats (A, B) */}
                           <div className="flex gap-2">
                             {rowSeats.slice(0, 2).map((seat) => {
-                              const isSelected = selectedSeat?.id === seat.id
+                              const isSelected = selectedSeats.some((s) => s.id === seat.id)
                               return (
                                 <button
                                   key={seat.id}
@@ -529,7 +582,7 @@ export function SeatMap({ flightId, flightNo, basePrice, origin, destination, on
                           {/* Right Seats (E, F) */}
                           <div className="flex gap-2">
                             {rowSeats.slice(2, 4).map((seat) => {
-                              const isSelected = selectedSeat?.id === seat.id
+                              const isSelected = selectedSeats.some((s) => s.id === seat.id)
                               return (
                                 <button
                                   key={seat.id}
@@ -551,7 +604,7 @@ export function SeatMap({ flightId, flightNo, basePrice, origin, destination, on
                           {/* Left Seats (A, B, C) */}
                           <div className="flex gap-1.5">
                             {rowSeats.slice(0, 3).map((seat) => {
-                              const isSelected = selectedSeat?.id === seat.id
+                              const isSelected = selectedSeats.some((s) => s.id === seat.id)
                               return (
                                 <button
                                   key={seat.id}
@@ -573,7 +626,7 @@ export function SeatMap({ flightId, flightNo, basePrice, origin, destination, on
                           {/* Right Seats (D, E, F) */}
                           <div className="flex gap-1.5">
                             {rowSeats.slice(3, 6).map((seat) => {
-                              const isSelected = selectedSeat?.id === seat.id
+                              const isSelected = selectedSeats.some((s) => s.id === seat.id)
                               return (
                                 <button
                                   key={seat.id}
@@ -611,32 +664,52 @@ export function SeatMap({ flightId, flightNo, basePrice, origin, destination, on
           </div>
 
           {/* Seat Selected Summary */}
-          {selectedSeat ? (
-            <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 space-y-2 animate-in fade-in duration-200">
-              <div className="flex justify-between items-center">
+          {selectedSeats.length > 0 ? (
+            <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 space-y-3 animate-in fade-in duration-200">
+              <div className="flex justify-between items-center pb-2 border-b border-primary/10">
                 <span className="text-sm font-bold text-zinc-800 dark:text-zinc-200">
-                  Seat: {selectedSeat.seat_number}
+                  Selected {selectedSeats.length} of {passengerCount} Seat(s)
                 </span>
-                <span className="text-xs font-semibold uppercase tracking-wider text-primary px-2.5 py-0.5 rounded-full bg-primary/10">
-                  {selectedSeat.class}
+                {selectedSeats.length < passengerCount && (
+                  <span className="text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-900 animate-pulse">
+                    Select {passengerCount - selectedSeats.length} more
+                  </span>
+                )}
+              </div>
+              <div className="max-h-28 overflow-y-auto space-y-2 pr-1">
+                {selectedSeats.map((seat, idx) => (
+                  <div key={seat.id} className="flex justify-between items-center text-xs">
+                    <span className="font-semibold text-zinc-700 dark:text-zinc-300">
+                      Passenger {idx + 1}: Seat {seat.seat_number} ({seat.class})
+                    </span>
+                    <span className="text-zinc-500">
+                      ₹{(basePrice + Number(seat.extra_fee)).toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between text-xs font-bold text-zinc-700 dark:text-zinc-300 pt-2 border-t border-dashed border-primary/20">
+                <span>Total Visual Fee:</span>
+                <span>
+                  ₹{selectedSeats.reduce((sum, s) => sum + Number(s.extra_fee), 0).toLocaleString("en-IN")}
                 </span>
               </div>
-              <div className="flex justify-between text-xs text-zinc-500 pt-1">
-                <span>Visual Fee: ₹{Number(selectedSeat.extra_fee).toLocaleString("en-IN")}</span>
-                <span className="font-bold text-zinc-800 dark:text-zinc-200">
-                  Total: ₹{Number(getSeatCost(selectedSeat)).toLocaleString("en-IN")}
+              <div className="flex justify-between text-sm font-extrabold text-zinc-900 dark:text-zinc-50">
+                <span>Total Cumulative Price:</span>
+                <span>
+                  ₹{((basePrice * passengerCount) + selectedSeats.reduce((sum, s) => sum + Number(s.extra_fee), 0)).toLocaleString("en-IN")}
                 </span>
               </div>
             </div>
           ) : (
             <div className="p-8 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl text-center space-y-1.5 text-zinc-400">
               <RiPlaneLine className="h-6 w-6 mx-auto animate-pulse text-zinc-300" />
-              <p className="text-xs font-medium">Select an open seat to begin booking.</p>
+              <p className="text-xs font-medium">Select {passengerCount} open seat(s) to begin booking.</p>
             </div>
           )}
 
           {/* Auth Gate and Form */}
-          {selectedSeat && (
+          {selectedSeats.length === passengerCount && (
             !user ? (
               <div className="p-6 rounded-xl border border-destructive/20 bg-destructive/5 space-y-4 text-center">
                 <RiAlertFill className="h-6 w-6 text-destructive mx-auto animate-bounce" />
@@ -759,10 +832,10 @@ export function SeatMap({ flightId, flightNo, basePrice, origin, destination, on
                   {isSubmitting ? (
                     <span className="flex items-center gap-2 justify-center">
                       <RiLoader4Line className="h-5 w-5 animate-spin" />
-                      Locking Seat &amp; Booking...
+                      Locking Seats &amp; Booking...
                     </span>
                   ) : (
-                    `Purchase Ticket - ₹${Number(getSeatCost(selectedSeat)).toLocaleString("en-IN")}`
+                    `Purchase Tickets - ₹${Number((basePrice * passengerCount) + selectedSeats.reduce((sum, s) => sum + Number(s.extra_fee), 0)).toLocaleString("en-IN")}`
                   )}
                 </Button>
               </form>
