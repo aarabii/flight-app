@@ -32,7 +32,11 @@ import {
   RiAlertFill,
   RiCheckDoubleLine,
 } from "@remixicon/react";
-import { type CachedBooking, type CachedFlight, useUserStore } from "@/store/useUserStore";
+import {
+  type CachedBooking,
+  type CachedFlight,
+  useUserStore,
+} from "@/store/useUserStore";
 import { useFlightStore } from "@/store/useFlightStore";
 import { useStoreHydration } from "@/store/useStoreHydration";
 import { cancelBooking } from "@/app/actions/cancel-booking";
@@ -40,7 +44,17 @@ import { rescheduleBooking } from "@/app/actions/reschedule-booking";
 import { SearchPanel } from "@/components/search-panel";
 
 type RescheduleFlight = Required<
-  Pick<CachedFlight, "id" | "flight_no" | "origin" | "destination" | "departs_at" | "arrives_at" | "base_price" | "status">
+  Pick<
+    CachedFlight,
+    | "id"
+    | "flight_no"
+    | "origin"
+    | "destination"
+    | "departs_at"
+    | "arrives_at"
+    | "base_price"
+    | "status"
+  >
 >;
 
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
@@ -118,20 +132,20 @@ export default function BookingsPage() {
   >(null);
 
   // Cancellation Dialog states
-  const [cancellingBooking, setCancellingBooking] = React.useState<CachedBooking | null>(
-    null,
-  );
+  const [cancellingBooking, setCancellingBooking] =
+    React.useState<CachedBooking | null>(null);
   const [isCancelling, setIsCancelling] = React.useState(false);
   const [cancelError, setCancelError] = React.useState<string | null>(null);
   const [cancelSuccess, setCancelSuccess] = React.useState(false);
 
   // Reschedule Dialog states
-  const [reschedulingBooking, setReschedulingBooking] = React.useState<
-    CachedBooking | null
-  >(null);
+  const [reschedulingBooking, setReschedulingBooking] =
+    React.useState<CachedBooking | null>(null);
   const [isRescheduleDialogOpen, setIsRescheduleDialogOpen] =
     React.useState(false);
-  const [rescheduleFlights, setRescheduleFlights] = React.useState<RescheduleFlight[]>([]);
+  const [rescheduleFlights, setRescheduleFlights] = React.useState<
+    RescheduleFlight[]
+  >([]);
   const [selectedRescheduleFlightId, setSelectedRescheduleFlightId] =
     React.useState("");
   const [isLoadingRescheduleFlights, setIsLoadingRescheduleFlights] =
@@ -445,25 +459,25 @@ export default function BookingsPage() {
         <div className="space-y-12">
           <Card className="border border-dashed border-zinc-200 dark:border-zinc-800 p-16 text-center shadow bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md">
             <CardContent className="space-y-4">
-            <div className="h-12 w-12 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/30 text-zinc-400 flex items-center justify-center mx-auto">
-              <RiTicketLine className="h-6 w-6" />
-            </div>
-            <div className="space-y-1.5 max-w-sm mx-auto">
-              <h3 className="text-lg font-bold font-heading">
-                You don&apos;t have any bookings
-              </h3>
-              <p className="text-xs text-zinc-500 leading-relaxed">
-                Book now to create your first visual seat booking and flight
-                itinerary.
-              </p>
-            </div>
-            <div className="pt-4">
-              <Link href="/">
-                <Button size="sm" className="font-semibold cursor-pointer">
-                  Book Now
-                </Button>
-              </Link>
-            </div>
+              <div className="h-12 w-12 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/30 text-zinc-400 flex items-center justify-center mx-auto">
+                <RiTicketLine className="h-6 w-6" />
+              </div>
+              <div className="space-y-1.5 max-w-sm mx-auto">
+                <h3 className="text-lg font-bold font-heading">
+                  You don&apos;t have any bookings
+                </h3>
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  Book now to create your first visual seat booking and flight
+                  itinerary.
+                </p>
+              </div>
+              <div className="pt-4">
+                <Link href="/">
+                  <Button size="sm" className="font-semibold cursor-pointer">
+                    Book Now
+                  </Button>
+                </Link>
+              </div>
             </CardContent>
           </Card>
 
@@ -483,316 +497,349 @@ export default function BookingsPage() {
       ) : (
         <div className="space-y-12">
           <div className="grid grid-cols-1 gap-6">
-          {bookings.map((booking) => {
-            const flight = Array.isArray(booking.flights)
-              ? booking.flights[0]
-              : booking.flights || booking.flight;
-            const seat = Array.isArray(booking.seats)
-              ? booking.seats[0]
-              : booking.seats || booking.seat;
-            const passenger = booking.passengers?.[0] || booking.passenger;
+            {bookings.map((booking) => {
+              const flight = Array.isArray(booking.flights)
+                ? booking.flights[0]
+                : booking.flights || booking.flight;
+              const seat = Array.isArray(booking.seats)
+                ? booking.seats[0]
+                : booking.seats || booking.seat;
+              const passenger = booking.passengers?.[0] || booking.passenger;
 
-            const departsAt = flight?.departs_at || new Date().toISOString();
-            const arrivesAt =
-              flight?.arrives_at ||
-              new Date(
-                new Date(departsAt).getTime() + 2 * 60 * 60 * 1000,
-              ).toISOString();
+              const departsAt = flight?.departs_at || new Date().toISOString();
+              const arrivesAt =
+                flight?.arrives_at ||
+                new Date(
+                  new Date(departsAt).getTime() + 2 * 60 * 60 * 1000,
+                ).toISOString();
 
-            const depDate = new Date(departsAt);
-            const depTime = depDate.toLocaleTimeString("en-US", {
-              hour: "numeric",
-              minute: "2-digit",
-            });
-            const depDateFormatted = depDate.toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            });
+              const depDate = new Date(departsAt);
+              const depTime = depDate.toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+              });
+              const depDateFormatted = depDate.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              });
 
-            const arrDate = new Date(arrivesAt);
-            const arrTime = arrDate.toLocaleTimeString("en-US", {
-              hour: "numeric",
-              minute: "2-digit",
-            });
+              const arrDate = new Date(arrivesAt);
+              const arrTime = arrDate.toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+              });
 
-            const durationMs = arrDate.getTime() - depDate.getTime();
-            const hours = Math.floor(durationMs / (1000 * 60 * 60));
-            const minutes = Math.floor(
-              (durationMs % (1000 * 60 * 60)) / (1000 * 60),
-            );
+              const durationMs = arrDate.getTime() - depDate.getTime();
+              const hours = Math.floor(durationMs / (1000 * 60 * 60));
+              const minutes = Math.floor(
+                (durationMs % (1000 * 60 * 60)) / (1000 * 60),
+              );
 
-            const isCancelled = booking.status === "cancelled";
-            const canReschedule = booking.status === "confirmed";
-            const timeUntilDeparture = !isCancelled
-              ? getTimeUntilDepartureLabel(departsAt, currentTime)
-              : null;
-            const cancellationLockMessage = getCancellationLockMessage(
-              flight?.flight_no,
-              departsAt,
-              currentTime,
-            );
-            const bookingDate =
-              booking.booked_at ||
-              booking.created_at ||
-              new Date().toISOString();
+              const isCancelled = booking.status === "cancelled";
+              const canReschedule = booking.status === "confirmed";
 
-            return (
-              <Card
-                key={booking.id}
-                className={`overflow-hidden border shadow-md bg-white dark:bg-zinc-900 transition-all duration-300 ${
-                  isCancelled
-                    ? "border-zinc-200/40 dark:border-zinc-800/40 opacity-75"
-                    : "border-zinc-200/80 dark:border-zinc-800/80 hover:shadow-lg"
-                }`}
-              >
-                {/* Visual Ticket Header */}
-                <div
-                  className={`px-6 py-4 flex flex-col sm:flex-row justify-between sm:items-center gap-4 ${
+              const departsMs = flight?.departs_at
+                ? new Date(flight.departs_at).getTime()
+                : Number.NaN;
+              const isDeparted =
+                !Number.isNaN(departsMs) && departsMs <= currentTime.getTime();
+
+              const arrivesMs = arrivesAt ? new Date(arrivesAt).getTime() : Number.NaN;
+              const isLanded =
+                !Number.isNaN(arrivesMs) && arrivesMs <= currentTime.getTime();
+
+              const travelerName =
+                passenger?.full_name?.split(" ")[0] || "Traveler";
+
+              const timeUntilDeparture = !isCancelled
+                ? getTimeUntilDepartureLabel(departsAt, currentTime)
+                : null;
+              const cancellationLockMessage = getCancellationLockMessage(
+                flight?.flight_no,
+                departsAt,
+                currentTime,
+              );
+              const bookingDate =
+                booking.booked_at ||
+                booking.created_at ||
+                new Date().toISOString();
+
+              return (
+                <Card
+                  key={booking.id}
+                  className={`overflow-hidden border shadow-md bg-white dark:bg-zinc-900 transition-all duration-300 ${
                     isCancelled
-                      ? "bg-zinc-100 dark:bg-zinc-950"
-                      : "bg-linear-to-r from-primary/5 to-purple-600/5 border-b border-zinc-100 dark:border-zinc-800"
+                      ? "border-zinc-200/40 dark:border-zinc-800/40 opacity-75"
+                      : "border-zinc-200/80 dark:border-zinc-800/80 hover:shadow-lg"
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                      PNR CODE
-                    </span>
-                    <span className="text-xl font-extrabold tracking-widest text-primary font-mono">
-                      {booking.pnr_code}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-semibold text-zinc-400">
-                      Booked:{" "}
-                      {new Date(bookingDate).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </span>
-                    <span
-                      className={`inline-flex px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
-                        isCancelled
-                          ? "bg-destructive/10 border-destructive/20 text-destructive"
-                          : "bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400"
-                      }`}
-                    >
-                      {booking.status}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Main Content Body */}
-                <CardContent className="p-6 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                  {/* Flight Info (3 Cols) */}
-                  <div className="md:col-span-3 space-y-1.5 border-b md:border-b-0 md:border-r border-zinc-100 dark:border-zinc-800 pb-4 md:pb-0 md:pr-6">
-                    <span className="inline-flex px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-[10px] font-bold text-zinc-600 dark:text-zinc-400">
-                      {flight?.flight_no || "Flight"}
-                    </span>
-                    <h3 className="text-lg font-bold font-heading text-zinc-900 dark:text-zinc-50">
-                      {flight?.flight_no}
-                    </h3>
-                    <p className="text-xs text-zinc-400 flex items-center gap-1">
-                      <RiPlaneLine className="h-3.5 w-3.5" />
-                      {flight?.aircraft_type || "Boeing 737-800"}
-                    </p>
-                    {timeUntilDeparture && (
-                      <p className="text-xs font-semibold text-primary flex items-center gap-1">
-                        <RiTimerLine className="h-3.5 w-3.5" />
-                        {timeUntilDeparture}
-                      </p>
-                    )}
+                  {/* Visual Ticket Header */}
+                  <div
+                    className={`px-6 py-4 flex flex-col sm:flex-row justify-between sm:items-center gap-4 ${
+                      isCancelled
+                        ? "bg-zinc-100 dark:bg-zinc-950"
+                        : "bg-linear-to-r from-primary/5 to-purple-600/5 border-b border-zinc-100 dark:border-zinc-800"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+                        PNR CODE
+                      </span>
+                      <span className="text-xl font-extrabold tracking-widest text-primary font-mono">
+                        {booking.pnr_code}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-semibold text-zinc-400">
+                        Booked:{" "}
+                        {new Date(bookingDate).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </span>
+                      <span
+                        className={`inline-flex px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
+                          isCancelled
+                            ? "bg-destructive/10 border-destructive/20 text-destructive"
+                            : "bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400"
+                        }`}
+                      >
+                        {booking.status}
+                      </span>
+                    </div>
                   </div>
 
-                  {/* Route Timeline (5 Cols) */}
-                  <div className="md:col-span-5 flex items-center justify-between gap-4 border-b md:border-b-0 md:border-r border-zinc-100 dark:border-zinc-800 pb-4 md:pb-0 md:pr-6">
-                    <div className="space-y-0.5">
-                      <p className="text-[10px] text-zinc-400 font-semibold uppercase">
-                        DEPART
+                  {/* Main Content Body */}
+                  <CardContent className="p-6 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                    {/* Flight Info (3 Cols) */}
+                    <div className="md:col-span-3 space-y-1.5 border-b md:border-b-0 md:border-r border-zinc-100 dark:border-zinc-800 pb-4 md:pb-0 md:pr-6">
+                      <span className="inline-flex px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-[10px] font-bold text-zinc-600 dark:text-zinc-400">
+                        {flight?.flight_no || "Flight"}
+                      </span>
+                      <h3 className="text-lg font-bold font-heading text-zinc-900 dark:text-zinc-50">
+                        {flight?.flight_no}
+                      </h3>
+                      <p className="text-xs text-zinc-400 flex items-center gap-1">
+                        <RiPlaneLine className="h-3.5 w-3.5" />
+                        {flight?.aircraft_type || "Boeing 737-800"}
                       </p>
-                      <p className="text-base font-bold text-zinc-800 dark:text-zinc-200">
-                        {depTime}
-                      </p>
-                      <p className="text-xs text-zinc-500 font-medium">
-                        {flight?.origin?.split(" ")[0]}
-                      </p>
+                      {timeUntilDeparture && (
+                        <p className="text-xs font-semibold text-primary flex items-center gap-1">
+                          <RiTimerLine className="h-3.5 w-3.5" />
+                          {timeUntilDeparture}
+                        </p>
+                      )}
                     </div>
 
-                    <div className="flex flex-col items-center justify-center flex-1 px-2 text-center">
-                      <span className="text-[9px] font-bold text-zinc-400 flex items-center gap-1">
-                        <RiTimerLine className="h-3 w-3" />
-                        {hours}h {minutes}m
-                      </span>
-                      <div className="relative w-full border-t border-dashed border-zinc-300 dark:border-zinc-700 my-1.5">
-                        <RiPlaneLine className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400 transform rotate-90" />
+                    {/* Route Timeline (5 Cols) */}
+                    <div className="md:col-span-5 flex items-center justify-between gap-4 border-b md:border-b-0 md:border-r border-zinc-100 dark:border-zinc-800 pb-4 md:pb-0 md:pr-6">
+                      <div className="space-y-0.5">
+                        <p className="text-[10px] text-zinc-400 font-semibold uppercase">
+                          DEPART
+                        </p>
+                        <p className="text-base font-bold text-zinc-800 dark:text-zinc-200">
+                          {depTime}
+                        </p>
+                        <p className="text-xs text-zinc-500 font-medium">
+                          {flight?.origin?.split(" ")[0]}
+                        </p>
                       </div>
-                      <span className="text-[9px] font-semibold text-zinc-400 uppercase tracking-widest">
-                        {depDateFormatted}
-                      </span>
+
+                      <div className="flex flex-col items-center justify-center flex-1 px-2 text-center">
+                        <span className="text-[9px] font-bold text-zinc-400 flex items-center gap-1">
+                          <RiTimerLine className="h-3 w-3" />
+                          {hours}h {minutes}m
+                        </span>
+                        <div className="relative w-full border-t border-dashed border-zinc-300 dark:border-zinc-700 my-1.5">
+                          <RiPlaneLine className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400 transform rotate-90" />
+                        </div>
+                        <span className="text-[9px] font-semibold text-zinc-400 uppercase tracking-widest">
+                          {depDateFormatted}
+                        </span>
+                      </div>
+
+                      <div className="space-y-0.5 text-right">
+                        <p className="text-[10px] text-zinc-400 font-semibold uppercase">
+                          ARRIVE
+                        </p>
+                        <p className="text-base font-bold text-zinc-800 dark:text-zinc-200">
+                          {arrTime}
+                        </p>
+                        <p className="text-xs text-zinc-500 font-medium">
+                          {flight?.destination?.split(" ")[0]}
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="space-y-0.5 text-right">
-                      <p className="text-[10px] text-zinc-400 font-semibold uppercase">
-                        ARRIVE
-                      </p>
-                      <p className="text-base font-bold text-zinc-800 dark:text-zinc-200">
-                        {arrTime}
-                      </p>
-                      <p className="text-xs text-zinc-500 font-medium">
-                        {flight?.destination?.split(" ")[0]}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Passenger / Seat Details (2 Cols) */}
-                  <div className="md:col-span-2 space-y-2">
-                    <div>
-                      <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">
-                        Passenger
-                      </p>
-                      <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300 truncate">
-                        {passenger?.full_name}
-                      </p>
-                      <p className="text-[10px] text-zinc-400 font-mono uppercase">
-                        {passenger?.passport_no || "••••••••••"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">
-                        Seat Allocation
-                      </p>
-                      <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
-                        {seat?.seat_number} ({seat?.class} Class)
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Pricing / Cancellation (2 Cols) */}
-                  <div className="md:col-span-2 flex flex-col justify-center items-start md:items-end gap-2 pt-4 md:pt-0">
-                    <div className="text-left md:text-right">
-                      <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">
-                        Fare Paid
-                      </p>
-                      <p className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-                        ₹{Number(booking.total_price).toLocaleString("en-IN")}
-                      </p>
+                    {/* Passenger / Seat Details (2 Cols) */}
+                    <div className="md:col-span-2 space-y-2">
+                      <div>
+                        <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">
+                          Passenger
+                        </p>
+                        <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300 truncate">
+                          {passenger?.full_name}
+                        </p>
+                        <p className="text-[10px] text-zinc-400 font-mono uppercase">
+                          {passenger?.passport_no || "••••••••••"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">
+                          Seat Allocation
+                        </p>
+                        <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
+                          {seat?.seat_number} ({seat?.class} Class)
+                        </p>
+                      </div>
                     </div>
 
-                    {canReschedule && (
-                      <div className="flex w-full flex-col gap-2 md:items-end">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setReschedulingBooking(booking);
-                            setRescheduleError(null);
-                            setRescheduleFlights([]);
-                            setSelectedRescheduleFlightId("");
-                            setIsRescheduleDialogOpen(true);
-                          }}
-                          className="w-full md:w-auto text-xs border-primary/20 text-primary hover:bg-primary/5 cursor-pointer"
-                        >
-                          Reschedule
-                        </Button>
+                    {/* Pricing / Cancellation (2 Cols) */}
+                    <div className="md:col-span-2 flex flex-col justify-center items-start md:items-end gap-2 pt-4 md:pt-0">
+                      <div className="text-left md:text-right">
+                        <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">
+                          Fare Paid
+                        </p>
+                        <p className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
+                          ₹{Number(booking.total_price).toLocaleString("en-IN")}
+                        </p>
+                      </div>
 
-                        {cancellationLockMessage ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              setCancelRuleMessage(cancellationLockMessage)
-                            }
-                            className="w-full md:w-auto text-xs text-destructive hover:bg-destructive/5 hover:text-destructive border-destructive/20 cursor-pointer"
-                          >
-                            Cancel Booking
-                          </Button>
+                      {canReschedule &&
+                        (isDeparted ? (
+                          <div className="flex w-full flex-col gap-2 md:items-end">
+                            <div className="w-full md:w-auto rounded-lg border border-dashed border-primary/30 bg-primary/5 px-3 py-2 text-left md:text-right">
+                              <p className="text-[10px] font-extrabold uppercase tracking-widest text-primary">
+                                {isLanded ? "Hope you enjoyed your flight" : "Happy Journey"}
+                              </p>
+                              <p className="mt-1 text-xs font-semibold text-zinc-800 dark:text-zinc-100">
+                                {isLanded
+                                  ? `Hope you enjoyed your flight, ${travelerName}.`
+                                  : `Enjoy your flight, ${travelerName}.`}
+                              </p>
+                              <p className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+                                {isLanded
+                                  ? "Thank you for flying with us."
+                                  : "We&apos;re honored to have you on board."}
+                              </p>
+                            </div>
+                          </div>
                         ) : (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
+                          <div className="flex w-full flex-col gap-2 md:items-end">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setReschedulingBooking(booking);
+                                setRescheduleError(null);
+                                setRescheduleFlights([]);
+                                setSelectedRescheduleFlightId("");
+                                setIsRescheduleDialogOpen(true);
+                              }}
+                              className="w-full md:w-auto text-xs border-primary/20 text-primary hover:bg-primary/5 cursor-pointer"
+                            >
+                              Reschedule
+                            </Button>
+
+                            {cancellationLockMessage ? (
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => {
-                                  setCancellingBooking(booking);
-                                  setCancelError(null);
-                                  setCancelSuccess(false);
-                                }}
+                                onClick={() =>
+                                  setCancelRuleMessage(cancellationLockMessage)
+                                }
                                 className="w-full md:w-auto text-xs text-destructive hover:bg-destructive/5 hover:text-destructive border-destructive/20 cursor-pointer"
                               >
                                 Cancel Booking
                               </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  Cancel this booking?
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This action cannot be undone. Your seat will
-                                  be released.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
+                            ) : (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      setCancellingBooking(booking);
+                                      setCancelError(null);
+                                      setCancelSuccess(false);
+                                    }}
+                                    className="w-full md:w-auto text-xs text-destructive hover:bg-destructive/5 hover:text-destructive border-destructive/20 cursor-pointer"
+                                  >
+                                    Cancel Booking
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                      Cancel this booking?
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This action cannot be undone. Your seat will
+                                      be released.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
 
-                              {cancelError && (
-                                <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-xs text-destructive border border-destructive/20 font-medium">
-                                  <RiAlertFill className="h-4 w-4 shrink-0" />
-                                  <span>{cancelError}</span>
-                                </div>
-                              )}
-
-                              {cancelSuccess && (
-                                <div className="flex items-center gap-2 rounded-lg bg-green-500/10 p-3 text-xs text-green-600 dark:text-green-400 border border-green-500/20 font-medium">
-                                  <RiCheckDoubleLine className="h-4 w-4 shrink-0" />
-                                  <span>
-                                    Ticket cancelled. Seat released
-                                    successfully!
-                                  </span>
-                                </div>
-                              )}
-
-                              <div className="py-2 text-xs text-zinc-500 dark:text-zinc-400 space-y-1 bg-zinc-50 dark:bg-zinc-900 p-3 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50">
-                                <p className="font-bold text-zinc-700 dark:text-zinc-300">
-                                  Cancellation Rule Checklist:
-                                </p>
-                                <p>
-                                  • Bookings departing in less than 2 hours are
-                                  locked and non-refundable.
-                                </p>
-                                <p>
-                                  • Once cancelled, the seat map will be updated
-                                  instantly for other travelers.
-                                </p>
-                              </div>
-
-                              <AlertDialogFooter>
-                                <AlertDialogCancel className="cursor-pointer">
-                                  Keep Booking
-                                </AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={handleCancelConfirm}
-                                  disabled={isCancelling || cancelSuccess}
-                                  className="font-semibold cursor-pointer"
-                                >
-                                  {isCancelling ? (
-                                    <span className="flex items-center gap-1.5">
-                                      <RiLoader4Line className="h-4 w-4 animate-spin" />
-                                      Cancelling...
-                                    </span>
-                                  ) : (
-                                    "Confirm Cancel"
+                                  {cancelError && (
+                                    <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-xs text-destructive border border-destructive/20 font-medium">
+                                      <RiAlertFill className="h-4 w-4 shrink-0" />
+                                      <span>{cancelError}</span>
+                                    </div>
                                   )}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+
+                                  {cancelSuccess && (
+                                    <div className="flex items-center gap-2 rounded-lg bg-green-500/10 p-3 text-xs text-green-600 dark:text-green-400 border border-green-500/20 font-medium">
+                                      <RiCheckDoubleLine className="h-4 w-4 shrink-0" />
+                                      <span>
+                                        Ticket cancelled. Seat released
+                                        successfully!
+                                      </span>
+                                    </div>
+                                  )}
+
+                                  <div className="py-2 text-xs text-zinc-500 dark:text-zinc-400 space-y-1 bg-zinc-50 dark:bg-zinc-900 p-3 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50">
+                                    <p className="font-bold text-zinc-700 dark:text-zinc-300">
+                                      Cancellation Rule Checklist:
+                                    </p>
+                                    <p>
+                                      • Bookings departing in less than 2 hours
+                                      are locked and non-refundable.
+                                    </p>
+                                    <p>
+                                      • Once cancelled, the seat map will be
+                                      updated instantly for other travelers.
+                                    </p>
+                                  </div>
+
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel className="cursor-pointer">
+                                      Keep Booking
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={handleCancelConfirm}
+                                      disabled={isCancelling || cancelSuccess}
+                                      className="font-semibold cursor-pointer"
+                                    >
+                                      {isCancelling ? (
+                                        <span className="flex items-center gap-1.5">
+                                          <RiLoader4Line className="h-4 w-4 animate-spin" />
+                                          Cancelling...
+                                        </span>
+                                      ) : (
+                                        "Confirm Cancel"
+                                      )}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
 
           <div className="space-y-6 pt-6 border-t border-zinc-200/50 dark:border-zinc-800/50">
