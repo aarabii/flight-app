@@ -7,8 +7,20 @@ import { RiPlaneLine, RiGlobeLine, RiArrowRightUpLine, RiCalendarLine } from "@r
 
 export const revalidate = 0 // Keep landing page flight boards fully real-time
 
+interface FlightListing {
+  id: string
+  flight_no: string
+  airline: string
+  origin: string
+  destination: string
+  departs_at: string
+  arrives_at: string
+  status: string
+  base_price: number
+}
+
 export default async function HomePage() {
-  let flights: any[] = []
+  let flights: FlightListing[] = []
   let errorMsg: string | null = null
 
   try {
@@ -22,10 +34,13 @@ export default async function HomePage() {
     if (error) {
       errorMsg = error.message
     } else {
-      flights = data || []
+      flights = (data || []) as FlightListing[]
     }
-  } catch (err: any) {
-    errorMsg = err.message || "Failed to retrieve scheduled flight listings."
+  } catch (err: unknown) {
+    errorMsg =
+      err instanceof Error
+        ? err.message
+        : "Failed to retrieve scheduled flight listings."
   }
 
   // Curated Luxury Destination Hubs

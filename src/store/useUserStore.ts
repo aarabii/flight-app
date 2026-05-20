@@ -13,6 +13,19 @@ export interface StoreUser {
   full_name?: string
 }
 
+export interface CachedFlight {
+  id?: string
+  flight_no?: string
+  airline?: string
+  origin?: string
+  destination?: string
+  departs_at?: string
+  arrives_at?: string
+  aircraft_type?: string
+  base_price?: number
+  status?: string
+}
+
 /**
  * Booking as stored in the Zustand cache.
  * All fields optional-or-present to cover:
@@ -26,16 +39,10 @@ export interface CachedBooking {
   status: string
   booked_at?: string
   created_at?: string
+  flight_id?: string
   seat_id?: string
   // Optimistic join shapes (added immediately after booking)
-  flight?: {
-    id?: string
-    flight_no?: string
-    airline?: string
-    origin?: string
-    destination?: string
-    departs_at?: string
-  }
+  flight?: CachedFlight
   seat?: {
     seat_number?: string
     class?: string
@@ -48,23 +55,7 @@ export interface CachedBooking {
     dob?: string
   }
   // DB join shapes (arrays returned from Supabase select with relationships)
-  flights?: {
-    flight_no?: string
-    airline?: string
-    origin?: string
-    destination?: string
-    departs_at?: string
-    arrives_at?: string
-    aircraft_type?: string
-  } | Array<{
-    flight_no?: string
-    airline?: string
-    origin?: string
-    destination?: string
-    departs_at?: string
-    arrives_at?: string
-    aircraft_type?: string
-  }>
+  flights?: CachedFlight | CachedFlight[]
   seats?: {
     seat_number?: string
     class?: string
@@ -86,7 +77,11 @@ export interface UserStoreState {
 
 export interface UserStoreActions {
   setUser: (user: StoreUser | null) => void
-  setCachedBookings: (bookings: CachedBooking[]) => void
+  setCachedBookings: (
+    bookings:
+      | CachedBooking[]
+      | ((previousBookings: CachedBooking[]) => CachedBooking[])
+  ) => void
   addCachedBooking: (booking: CachedBooking) => void
   updateCachedBookingStatus: (bookingId: string, status: string) => void
   clearSession: () => void
@@ -100,7 +95,13 @@ export const useUserStore = create<UserStoreState & UserStoreActions>()(
 
       setUser: (user) => set({ user }),
 
-      setCachedBookings: (bookings) => set({ cachedBookings: bookings }),
+      setCachedBookings: (bookings) =>
+        set((state) => ({
+          cachedBookings:
+            typeof bookings === "function"
+              ? bookings(state.cachedBookings)
+              : bookings,
+        })),
 
       addCachedBooking: (booking) =>
         set((state) => ({

@@ -12,6 +12,29 @@ import { useUserStore } from "@/store/useUserStore"
 import { useStoreHydration } from "@/store/useStoreHydration"
 import { bookSeat } from "@/app/actions/book-seat"
 
+interface Seat {
+  id: string
+  flight_id: string
+  seat_number: string
+  class: "economy" | "business" | "first"
+  is_available: boolean
+  extra_fee: number
+}
+
+interface PassengerForm {
+  fullName: string
+  passportNo: string
+  nationality: string
+  dob: string
+}
+
+interface BookingResult {
+  booking_id: string
+  pnr_code: string
+  total_price: number
+  departs_at?: string
+}
+
 interface SeatMapProps {
   flightId: string
   flightNo: string
@@ -23,7 +46,7 @@ interface SeatMapProps {
 }
 
 export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destination, onClose }: SeatMapProps) {
-  const [seats, setSeats] = React.useState<any[]>([])
+  const [seats, setSeats] = React.useState<Seat[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
 
   // Zustand store variables with Next.js SSR hydration safety
@@ -45,9 +68,7 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
   const resetBookingFlow = useFlightStore((state) => state.resetBookingFlow)
 
   // Local array state — one entry per passenger
-  const [passengers, setPassengers] = React.useState<
-    { fullName: string; passportNo: string; nationality: string; dob: string }[]
-  >(() =>
+  const [passengers, setPassengers] = React.useState<PassengerForm[]>(() =>
     Array.from({ length: passengerCount }, () => ({
       fullName: "",
       passportNo: "",
@@ -112,7 +133,7 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
     
     async function fetchSeats() {
       setIsLoading(true)
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("seats")
         .select("*")
         .eq("flight_id", flightId)
@@ -120,7 +141,7 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
       
       if (data) {
         // Sort seats numerically and then by seat letter
-        const sorted = [...data].sort((a, b) => {
+        const sorted = ([...data] as Seat[]).sort((a, b) => {
           const rowA = parseInt(a.seat_number)
           const rowB = parseInt(b.seat_number)
           if (rowA !== rowB) return rowA - rowB
@@ -172,7 +193,7 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
   }, [flightId])
 
   // Group seats by row number
-  const groupedRows: { [key: number]: any[] } = {}
+  const groupedRows: Record<number, Seat[]> = {}
   seats.forEach((seat) => {
     const rowNum = parseInt(seat.seat_number)
     if (!groupedRows[rowNum]) {
@@ -182,12 +203,12 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
   })
 
   // Get pricing by seat class
-  const getSeatCost = (seat: any) => {
+  const getSeatCost = (seat: Seat) => {
     return basePrice + Number(seat.extra_fee)
   }
 
   // Handle seat click
-  const handleSelectSeat = (seat: any) => {
+  const handleSelectSeat = (seat: Seat) => {
     if (!seat.is_available) return
     const nextSeat = seat === selectedSeat ? null : seat
     setSelectedSeat(nextSeat)
@@ -250,12 +271,7 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
         setSubmitError(result.error)
         setIsSubmitting(false)
       } else {
-        const data = result.data as {
-          booking_id: string
-          pnr_code: string
-          total_price: number
-          departs_at?: string
-        }
+        const data = result.data as BookingResult
         // Cache the successful booking details instantly!
         const newBooking = {
           id: data.booking_id,

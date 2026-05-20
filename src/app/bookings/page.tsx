@@ -27,21 +27,23 @@ import Link from "next/link";
 import {
   RiPlaneLine,
   RiTicketLine,
-  RiUserLine,
-  RiCalendarLine,
   RiTimerLine,
   RiLoader4Line,
   RiAlertFill,
   RiCheckDoubleLine,
 } from "@remixicon/react";
-import { useUserStore } from "@/store/useUserStore";
+import { type CachedBooking, type CachedFlight, useUserStore } from "@/store/useUserStore";
 import { useFlightStore } from "@/store/useFlightStore";
 import { useStoreHydration } from "@/store/useStoreHydration";
 import { cancelBooking } from "@/app/actions/cancel-booking";
 import { rescheduleBooking } from "@/app/actions/reschedule-booking";
 
+type RescheduleFlight = Required<
+  Pick<CachedFlight, "id" | "flight_no" | "origin" | "destination" | "departs_at" | "arrives_at" | "base_price" | "status">
+>;
+
 export default function BookingsPage() {
-  const isHydrated = useStoreHydration(useUserStore, (state) => true) ?? false;
+  const isHydrated = useStoreHydration(useUserStore, () => true) ?? false;
   const cachedBookings = useUserStore((state) => state.cachedBookings);
   const setCachedBookings = useUserStore((state) => state.setCachedBookings);
   const updateCachedBookingStatus = useUserStore(
@@ -49,13 +51,13 @@ export default function BookingsPage() {
   );
   const resetBookingFlow = useFlightStore((s) => s.resetBookingFlow);
 
-  const [bookings, setBookings] = React.useState<any[]>([]);
+  const [bookings, setBookings] = React.useState<CachedBooking[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
   const [toastMessage, setToastMessage] = React.useState<string | null>(null);
 
   // Cancellation Dialog states
-  const [cancellingBooking, setCancellingBooking] = React.useState<any | null>(
+  const [cancellingBooking, setCancellingBooking] = React.useState<CachedBooking | null>(
     null,
   );
   const [isCancelling, setIsCancelling] = React.useState(false);
@@ -64,11 +66,11 @@ export default function BookingsPage() {
 
   // Reschedule Dialog states
   const [reschedulingBooking, setReschedulingBooking] = React.useState<
-    any | null
+    CachedBooking | null
   >(null);
   const [isRescheduleDialogOpen, setIsRescheduleDialogOpen] =
     React.useState(false);
-  const [rescheduleFlights, setRescheduleFlights] = React.useState<any[]>([]);
+  const [rescheduleFlights, setRescheduleFlights] = React.useState<RescheduleFlight[]>([]);
   const [selectedRescheduleFlightId, setSelectedRescheduleFlightId] =
     React.useState("");
   const [isLoadingRescheduleFlights, setIsLoadingRescheduleFlights] =
@@ -125,11 +127,11 @@ export default function BookingsPage() {
       if (error) {
         setErrorMsg(error.message);
       } else {
-        const bookingsList = data || [];
+        const bookingsList = (data || []) as CachedBooking[];
         setBookings(bookingsList);
         setCachedBookings(bookingsList);
       }
-    } catch (err: any) {
+    } catch {
       setErrorMsg("Failed to load booking itineraries. Please refresh.");
     } finally {
       setIsLoading(false);
@@ -239,7 +241,7 @@ export default function BookingsPage() {
         setRescheduleError(error.message);
         setRescheduleFlights([]);
       } else {
-        const nextFlights = data || [];
+        const nextFlights = (data || []) as RescheduleFlight[];
         setRescheduleFlights(nextFlights);
         setSelectedRescheduleFlightId(nextFlights[0]?.id ?? "");
       }
@@ -398,8 +400,12 @@ export default function BookingsPage() {
       ) : (
         <div className="grid grid-cols-1 gap-6">
           {bookings.map((booking) => {
-            const flight = booking.flights || booking.flight;
-            const seat = booking.seats || booking.seat;
+            const flight = Array.isArray(booking.flights)
+              ? booking.flights[0]
+              : booking.flights || booking.flight;
+            const seat = Array.isArray(booking.seats)
+              ? booking.seats[0]
+              : booking.seats || booking.seat;
             const passenger = booking.passengers?.[0] || booking.passenger;
 
             const departsAt = flight?.departs_at || new Date().toISOString();

@@ -19,7 +19,7 @@ export interface NavbarProps {
   } | null
 }
 
-export function Navbar({ initialUser }: NavbarProps) {
+export function Navbar() {
   const router = useRouter()
   const pathname = usePathname()
   
