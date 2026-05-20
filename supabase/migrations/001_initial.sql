@@ -14,7 +14,7 @@ CREATE TABLE flights (
     departs_at TIMESTAMP WITH TIME ZONE NOT NULL,
     arrives_at TIMESTAMP WITH TIME ZONE NOT NULL,
     aircraft_type TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'scheduled',
+    status TEXT NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'delayed', 'cancelled', 'departed', 'arrived')),
     base_price NUMERIC(10, 2) NOT NULL CHECK (base_price >= 0.00),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     CONSTRAINT chk_flight_times CHECK (arrives_at > departs_at)
@@ -38,7 +38,7 @@ CREATE TABLE bookings (
     user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     flight_id UUID NOT NULL REFERENCES flights(id) ON DELETE CASCADE,
     seat_id UUID NOT NULL REFERENCES seats(id) ON DELETE CASCADE,
-    status TEXT NOT NULL DEFAULT 'confirmed' CHECK (status IN ('confirmed', 'cancelled')),
+    status TEXT NOT NULL DEFAULT 'confirmed' CHECK (status IN ('confirmed', 'cancelled', 'rescheduled')),
     booked_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     total_price NUMERIC(10, 2) NOT NULL CHECK (total_price >= 0.00),
     pnr_code VARCHAR(6) NOT NULL UNIQUE,
@@ -93,6 +93,12 @@ CREATE POLICY "Flights are publicly viewable by everyone" ON flights
 -- Seats RLS Policies
 CREATE POLICY "Seats are publicly viewable by everyone" ON seats
     FOR SELECT USING (true);
+
+CREATE POLICY "Deny direct seat updates" ON seats
+  FOR UPDATE USING (false);
+
+CREATE POLICY "Deny direct seat deletes" ON seats
+  FOR DELETE USING (false);
 
 -- Bookings RLS Policies
 CREATE POLICY "Users can view their own bookings" ON bookings
@@ -252,31 +258,29 @@ $$;
 
 -- Trigger to reject cancellation if departing in less than 2 hours
 CREATE OR REPLACE FUNCTION check_booking_cancellation()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
+RETURNS TRIGGER AS $$
 DECLARE
-    v_departs_at TIMESTAMP WITH TIME ZONE;
+  v_departs_at TIMESTAMPTZ;
 BEGIN
-    -- Check if booking status is being changed to 'cancelled'
-    IF NEW.status = 'cancelled' AND OLD.status <> 'cancelled' THEN
-        SELECT departs_at INTO v_departs_at
-        FROM flights
-        WHERE id = NEW.flight_id;
-
-        IF NOT FOUND THEN
-            RAISE EXCEPTION 'Associated flight was not found for booking %', NEW.id;
-        END IF;
-
-        -- Business Rule constraint check (less than 2 hours remaining)
-        IF v_departs_at - NOW() < INTERVAL '2 hours' THEN
-            RAISE EXCEPTION 'Cancellation rejected. Bookings cannot be cancelled less than 2 hours before scheduled departure. (Departure: %, Current: %)', 
-                v_departs_at, NOW();
-        END IF;
+    -- Check on cancellation
+    IF NEW.status = 'cancelled' AND OLD.status != 'cancelled' THEN
+      SELECT departs_at INTO v_departs_at FROM flights WHERE id = NEW.flight_id;
+      IF v_departs_at - NOW() < INTERVAL '2 hours' THEN
+        RAISE EXCEPTION 'Cannot cancel a booking within 2 hours of departure';
+      END IF;
     END IF;
+
+    -- Check on reschedule (flight_id change)
+    IF NEW.flight_id IS DISTINCT FROM OLD.flight_id THEN
+      SELECT departs_at INTO v_departs_at FROM flights WHERE id = NEW.flight_id;
+      IF v_departs_at - NOW() < INTERVAL '2 hours' THEN
+        RAISE EXCEPTION 'Cannot reschedule to a flight departing within 2 hours';
+      END IF;
+    END IF;
+
     RETURN NEW;
 END;
-$$;
+$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_check_booking_cancellation
 BEFORE UPDATE ON bookings
@@ -327,3 +331,39 @@ CREATE TRIGGER trg_handle_booking_status_change
 AFTER UPDATE ON bookings
 FOR EACH ROW
 EXECUTE FUNCTION handle_booking_status_change();
+
+-- =========================================================================
+-- 5. Cancel Booking RPC (Atomic Cancel + Seat Release)
+-- =========================================================================
+
+CREATE OR REPLACE FUNCTION cancel_booking(p_booking_id UUID)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_seat_id UUID;
+BEGIN
+    -- Verify the booking belongs to the calling user
+    SELECT seat_id INTO v_seat_id
+    FROM bookings
+    WHERE id = p_booking_id AND user_id = auth.uid();
+
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'Booking not found or unauthorized';
+    END IF;
+
+    -- Update booking status (the 2-hour trigger will fire here and block if too close)
+    UPDATE bookings SET status = 'cancelled' WHERE id = p_booking_id;
+
+    -- Release the seat atomically in the same transaction
+    UPDATE seats SET is_available = true WHERE id = v_seat_id;
+END;
+$$;
+
+-- =========================================================================
+-- 6. Enable Realtime Replication
+-- =========================================================================
+
+-- Enable Realtime replication for seats table
+ALTER PUBLICATION supabase_realtime ADD TABLE seats;

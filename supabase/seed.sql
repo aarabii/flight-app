@@ -1,3 +1,8 @@
+-- TEST USER: Must be created manually in Supabase Dashboard → Authentication → Users
+-- Email: test@aerolux.com
+-- Password: Test@12345
+-- After creating, copy the UUID and use it to pre-seed a test booking if desired.
+
 -- Supabase Seed Data Script
 -- Populates flights and programmatically generates full seat maps (108 seats per flight, 3,024 seats total)
 
@@ -132,3 +137,13 @@ BEGIN
 
     DROP TABLE temp_flights;
 END $$;
+
+-- Mark one economy seat per flight as occupied for UI testing
+UPDATE seats
+SET is_available = false
+WHERE id IN (
+  SELECT DISTINCT ON (flight_id) id
+  FROM seats
+  WHERE class = 'economy'
+  ORDER BY flight_id, seat_number ASC
+);
