@@ -11,7 +11,7 @@ import {
   RiCalendarLine,
 } from "@remixicon/react";
 
-export const revalidate = 0; // Keep landing page flight boards fully real-time
+export const revalidate = 0;
 
 interface FlightListing {
   id: string;
@@ -48,7 +48,6 @@ export default async function HomePage() {
         : "Failed to retrieve scheduled flight listings.";
   }
 
-  // Curated Luxury Destination Hubs
   const HUBS = [
     {
       city: "London",
@@ -82,15 +81,12 @@ export default async function HomePage() {
 
   return (
     <div className="flex-1 flex flex-col">
-      {/* Hero Section */}
       <HeroSection />
 
-      {/* Interactive Search Panel Overlay */}
       <section className="container mx-auto px-4 md:px-6 relative z-10">
         <SearchPanel />
       </section>
 
-      {/* Featured Destinations */}
       <section className="container mx-auto px-4 md:px-6 py-20 space-y-12">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="space-y-1.5">
@@ -137,7 +133,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Live Boarding / Real-time Deals */}
       <section className="bg-zinc-100 dark:bg-zinc-900/40 py-20 border-y border-zinc-200/50 dark:border-zinc-800/50">
         <div className="container mx-auto px-4 md:px-6 space-y-10">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -181,7 +176,6 @@ export default async function HomePage() {
                   minute: "2-digit",
                 });
 
-                // Duration Calculation
                 const durationMs = arrDate.getTime() - depDate.getTime();
                 const hours = Math.floor(durationMs / (1000 * 60 * 60));
                 const minutes = Math.floor(
@@ -194,7 +188,6 @@ export default async function HomePage() {
                     className="group border border-zinc-200/80 dark:border-zinc-800/80 rounded-xl bg-white dark:bg-zinc-950 p-6 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
                   >
                     <div>
-                      {/* Flight Header */}
                       <div className="flex items-center justify-between pb-4 border-b border-zinc-100 dark:border-zinc-900">
                         <div>
                           <span className="text-xs font-bold text-primary px-2.5 py-0.5 rounded-full bg-primary/10">
@@ -210,7 +203,6 @@ export default async function HomePage() {
                         </span>
                       </div>
 
-                      {/* Travel Route Information */}
                       <div className="py-4 space-y-3">
                         <div className="flex items-start justify-between">
                           <div className="space-y-0.5">
@@ -254,7 +246,6 @@ export default async function HomePage() {
                           </div>
                         </div>
 
-                        {/* Date/Time info */}
                         <div className="flex items-center justify-between text-xs font-semibold py-2 px-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/30 dark:border-zinc-800/30">
                           <span className="flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400">
                             <RiCalendarLine className="h-3.5 w-3.5 text-primary" />
