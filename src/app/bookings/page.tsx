@@ -37,6 +37,7 @@ import { useFlightStore } from "@/store/useFlightStore";
 import { useStoreHydration } from "@/store/useStoreHydration";
 import { cancelBooking } from "@/app/actions/cancel-booking";
 import { rescheduleBooking } from "@/app/actions/reschedule-booking";
+import { SearchPanel } from "@/components/search-panel";
 
 type RescheduleFlight = Required<
   Pick<CachedFlight, "id" | "flight_no" | "origin" | "destination" | "departs_at" | "arrives_at" | "base_price" | "status">
@@ -108,7 +109,6 @@ export default function BookingsPage() {
           flights (
             id,
             flight_no,
-            airline,
             origin,
             destination,
             departs_at,
@@ -374,29 +374,32 @@ export default function BookingsPage() {
           {errorMsg}
         </div>
       ) : bookings.length === 0 ? (
-        <Card className="border border-dashed border-zinc-200 dark:border-zinc-800 p-16 text-center shadow bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md">
-          <CardContent className="space-y-4">
+        <div className="space-y-10">
+          <Card className="border border-dashed border-zinc-200 dark:border-zinc-800 p-16 text-center shadow bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md">
+            <CardContent className="space-y-4">
             <div className="h-12 w-12 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/30 text-zinc-400 flex items-center justify-center mx-auto">
               <RiTicketLine className="h-6 w-6" />
             </div>
             <div className="space-y-1.5 max-w-sm mx-auto">
               <h3 className="text-lg font-bold font-heading">
-                No Travel Records
+                You do not have any bookings
               </h3>
               <p className="text-xs text-zinc-500 leading-relaxed">
-                You currently do not have any visual seat bookings or flight
-                itineraries confirmed under this account.
+                Book now to create your first visual seat booking and flight
+                itinerary.
               </p>
             </div>
             <div className="pt-4">
               <Link href="/">
                 <Button size="sm" className="font-semibold cursor-pointer">
-                  Explore Flights
+                  Book Now
                 </Button>
               </Link>
             </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+          <SearchPanel />
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-6">
           {bookings.map((booking) => {
@@ -495,7 +498,7 @@ export default function BookingsPage() {
                   {/* Flight Info (3 Cols) */}
                   <div className="md:col-span-3 space-y-1.5 border-b md:border-b-0 md:border-r border-zinc-100 dark:border-zinc-800 pb-4 md:pb-0 md:pr-6">
                     <span className="inline-flex px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-[10px] font-bold text-zinc-600 dark:text-zinc-400">
-                      {flight?.airline}
+                      {flight?.flight_no || "Flight"}
                     </span>
                     <h3 className="text-lg font-bold font-heading text-zinc-900 dark:text-zinc-50">
                       {flight?.flight_no}

@@ -23,6 +23,7 @@ import type { Flight } from "@/store/useFlightStore"
 interface FlightResultsProps {
   flights: Flight[]
   passengerCount: number
+  isHubSchedule?: boolean
   searchParams: {
     origin: string
     destination: string
@@ -34,6 +35,7 @@ interface FlightResultsProps {
 export function FlightResults({
   flights,
   passengerCount,
+  isHubSchedule = false,
   searchParams: { origin, destination, date: dateStr, selectedClass },
 }: FlightResultsProps) {
   // Zustand state for selected flight (seat map modal trigger)
@@ -41,12 +43,13 @@ export function FlightResults({
   const activeFlight = storeSelectedFlight !== undefined ? storeSelectedFlight : null
 
   const setSelectedFlight = useFlightStore((state) => state.setSelectedFlight)
+  const setSelectedSeat    = useFlightStore((state) => state.setSelectedSeat)
   const setBookingStep    = useFlightStore((state) => state.setBookingStep)
   const setSearchState    = useFlightStore((state) => state.setSearchState)
 
   // Sync URL params back into the store so the rest of the booking flow has them
   React.useEffect(() => {
-    if (origin || destination || dateStr || selectedClass || passengerCount) {
+    if (!isHubSchedule && (origin || destination || dateStr || selectedClass || passengerCount)) {
       setSearchState({
         origin,
         destination,
@@ -55,7 +58,7 @@ export function FlightResults({
         passengerCount,
       })
     }
-  }, [origin, destination, dateStr, selectedClass, passengerCount, setSearchState])
+  }, [isHubSchedule, origin, destination, dateStr, selectedClass, passengerCount, setSearchState])
 
   return (
     <div className="flex-grow container mx-auto px-4 md:px-6 py-10 space-y-8 min-h-[75vh]">
@@ -76,25 +79,45 @@ export function FlightResults({
       </div>
 
       {/* Query Search Panel Summary */}
-      {origin && destination && (
+      {(isHubSchedule ? destination : origin && destination) && (
         <div className="p-6 rounded-xl border border-zinc-200/60 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold font-heading flex items-center gap-3">
-              <span>{origin.split(" ")[0]}</span>
-              <RiArrowRightLine className="h-5 w-5 text-primary" />
-              <span>{destination.split(" ")[0]}</span>
+              {isHubSchedule ? (
+                <>
+                  <span>All Origins</span>
+                  <RiArrowRightLine className="h-5 w-5 text-primary" />
+                  <span>{destination.split(" ")[0]}</span>
+                </>
+              ) : (
+                <>
+                  <span>{origin.split(" ")[0]}</span>
+                  <RiArrowRightLine className="h-5 w-5 text-primary" />
+                  <span>{destination.split(" ")[0]}</span>
+                </>
+              )}
             </h1>
             <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-500 font-medium">
-              <span className="flex items-center gap-1">
-                <RiPlaneLine className="h-3.5 w-3.5 transform rotate-45" />
-                {origin.substring(origin.indexOf("("))}
-              </span>
+              {!isHubSchedule && (
+                <span className="flex items-center gap-1">
+                  <RiPlaneLine className="h-3.5 w-3.5 transform rotate-45" />
+                  {origin.substring(origin.indexOf("("))}
+                </span>
+              )}
               <span className="text-zinc-300">|</span>
               <span className="flex items-center gap-1">
                 <RiPlaneLine className="h-3.5 w-3.5 transform rotate-90" />
                 {destination.substring(destination.indexOf("("))}
               </span>
-              {dateStr && (
+              {isHubSchedule ? (
+                <>
+                  <span className="text-zinc-300">|</span>
+                  <span className="flex items-center gap-1">
+                    <RiCalendarLine className="h-3.5 w-3.5" />
+                    Upcoming schedules
+                  </span>
+                </>
+              ) : dateStr && (
                 <>
                   <span className="text-zinc-300">|</span>
                   <span className="flex items-center gap-1">
@@ -126,7 +149,7 @@ export function FlightResults({
       {/* Main Grid Content */}
       <div className="grid grid-cols-1 gap-6">
 
-        {!origin || !destination ? (
+        {!isHubSchedule && (!origin || !destination) ? (
           // Empty state: show search card directly
           <div className="space-y-12">
             <div className="max-w-md mx-auto text-center space-y-2 py-8">
@@ -148,7 +171,9 @@ export function FlightResults({
               <div className="space-y-1.5 max-w-sm mx-auto">
                 <h3 className="text-lg font-bold font-heading">No Flights Scheduled</h3>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                  We currently do not have matching departures scheduled for the date selected. Please adjust your parameters or check other dates.
+                  {isHubSchedule
+                    ? "We currently do not have upcoming arrivals scheduled for this hub."
+                    : "We currently do not have matching departures scheduled for the date selected. Please adjust your parameters or check other dates."}
                 </p>
               </div>
               <div className="pt-6">
@@ -167,6 +192,8 @@ export function FlightResults({
 
             <div className="space-y-4">
               {flights.map((flight) => {
+                const displayOrigin = flight.origin || origin
+                const displayDestination = flight.destination || destination
                 const depDate = new Date(flight.departs_at)
                 const depTime = depDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
 
@@ -188,7 +215,7 @@ export function FlightResults({
                       {/* 1. Airline / Flight Number (3 Cols) */}
                       <div className="md:col-span-3 space-y-1">
                         <span className="inline-flex px-2.5 py-0.5 rounded-full bg-primary/10 text-xs font-bold text-primary">
-                          {flight.airline}
+                          {flight.flight_no}
                         </span>
                         <h4 className="text-base font-bold text-zinc-800 dark:text-zinc-200">{flight.flight_no}</h4>
                         <p className="text-xs text-zinc-400 dark:text-zinc-500 flex items-center gap-1.5">
@@ -202,7 +229,7 @@ export function FlightResults({
                         <div className="space-y-0.5">
                           <p className="text-xs text-zinc-400 dark:text-zinc-500 font-semibold">DEPART</p>
                           <p className="text-lg font-bold text-zinc-800 dark:text-zinc-200">{depTime}</p>
-                          <p className="text-xs text-zinc-500 font-medium">{origin.split(" ")[0]}</p>
+                          <p className="text-xs text-zinc-500 font-medium">{displayOrigin.split(" ")[0]}</p>
                         </div>
 
                         <div className="flex flex-col items-center justify-center flex-1 px-4 text-center">
@@ -219,7 +246,7 @@ export function FlightResults({
                         <div className="space-y-0.5 text-right">
                           <p className="text-xs text-zinc-400 dark:text-zinc-500 font-semibold">ARRIVE</p>
                           <p className="text-lg font-bold text-zinc-800 dark:text-zinc-200">{arrTime}</p>
-                          <p className="text-xs text-zinc-500 font-medium">{destination.split(" ")[0]}</p>
+                          <p className="text-xs text-zinc-500 font-medium">{displayDestination.split(" ")[0]}</p>
                         </div>
                       </div>
 
@@ -237,6 +264,7 @@ export function FlightResults({
                         <Button
                           onClick={() => {
                             setSelectedFlight(flight)
+                            setSelectedSeat(null)
                             setBookingStep("seating")
                           }}
                           className="w-full md:w-auto font-bold px-6 shadow-md shadow-primary/10 cursor-pointer"
@@ -267,7 +295,7 @@ export function FlightResults({
                   Visual Seating Map &amp; Traveler Locks
                 </h3>
                 <p className="text-xs text-zinc-500">
-                  {activeFlight.airline} {activeFlight.flight_no} • {activeFlight.origin.split(" ")[0]} to {activeFlight.destination.split(" ")[0]}
+                  {activeFlight.flight_no} • {activeFlight.origin.split(" ")[0]} to {activeFlight.destination.split(" ")[0]}
                 </p>
               </div>
               <Button
@@ -288,7 +316,6 @@ export function FlightResults({
               <SeatMap
                 flightId={activeFlight.id}
                 flightNo={activeFlight.flight_no}
-                airline={activeFlight.airline}
                 basePrice={Number(activeFlight.base_price)}
                 origin={activeFlight.origin}
                 destination={activeFlight.destination}

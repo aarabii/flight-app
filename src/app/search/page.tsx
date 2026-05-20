@@ -12,6 +12,7 @@ interface SearchPageProps {
     date?: string
     class?: string
     passengers?: string
+    mode?: string
   }>
 }
 
@@ -24,15 +25,31 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const date          = resolvedParams.date          ?? ""
   const selectedClass = resolvedParams.class         ?? "economy"
   const passengerCount = parseInt(resolvedParams.passengers ?? "1", 10)
+  const mode = resolvedParams.mode ?? ""
+  const isHubSchedule = mode === "hub" && Boolean(destination)
 
   let flights: Flight[] = []
 
-  if (origin && destination && date) {
+  if (isHubSchedule) {
     const supabase = await createServerClient()
 
     const { data, error } = await supabase
       .from("flights")
-      .select("*")
+      .select("id, flight_no, origin, destination, departs_at, arrives_at, aircraft_type, status, base_price")
+      .eq("destination", destination)
+      .eq("status", "scheduled")
+      .gte("departs_at", new Date().toISOString())
+      .order("departs_at", { ascending: true })
+
+    if (!error && data) {
+      flights = data as Flight[]
+    }
+  } else if (origin && destination && date) {
+    const supabase = await createServerClient()
+
+    const { data, error } = await supabase
+      .from("flights")
+      .select("id, flight_no, origin, destination, departs_at, arrives_at, aircraft_type, status, base_price")
       .eq("origin", origin)
       .eq("destination", destination)
       .gte("departs_at", `${date}T00:00:00.000Z`)
@@ -49,6 +66,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     <FlightResults
       flights={flights}
       passengerCount={passengerCount}
+      isHubSchedule={isHubSchedule}
       searchParams={{ origin, destination, date, selectedClass }}
     />
   )

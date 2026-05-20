@@ -10,7 +10,6 @@ export const revalidate = 0 // Keep landing page flight boards fully real-time
 interface FlightListing {
   id: string
   flight_no: string
-  airline: string
   origin: string
   destination: string
   departs_at: string
@@ -45,10 +44,10 @@ export default async function HomePage() {
 
   // Curated Luxury Destination Hubs
   const HUBS = [
-    { city: "London", airport: "Heathrow (LHR T5)", tag: "Royal Charm", color: "from-blue-600/20 to-indigo-600/20" },
-    { city: "Dubai", airport: "Dubai Intl (DXB T3)", tag: "Futuristic Luxury", color: "from-amber-600/20 to-orange-600/20" },
-    { city: "Tokyo", airport: "Narita Airport (NRT T1)", tag: "Zen Heritage", color: "from-rose-600/20 to-red-600/20" },
-    { city: "New York", airport: "JFK Intl (JFK T8)", tag: "Urban Horizon", color: "from-purple-600/20 to-indigo-600/20" },
+    { city: "London", airport: "Heathrow (LHR T5)", destination: "LHR (Heathrow T5)", tag: "Royal Charm", color: "from-blue-600/20 to-indigo-600/20" },
+    { city: "Dubai", airport: "Dubai Intl (DXB T3)", destination: "DXB (Dubai T3)", tag: "Futuristic Luxury", color: "from-amber-600/20 to-orange-600/20" },
+    { city: "Tokyo", airport: "Narita Airport (NRT T1)", destination: "NRT (Narita T1)", tag: "Zen Heritage", color: "from-rose-600/20 to-red-600/20" },
+    { city: "New York", airport: "JFK Intl (JFK T8)", destination: "JFK (Kennedy T8)", tag: "Urban Horizon", color: "from-purple-600/20 to-indigo-600/20" },
   ]
 
   return (
@@ -101,8 +100,9 @@ export default async function HomePage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {HUBS.map((hub) => (
-            <div
+            <Link
               key={hub.city}
+              href={`/search?mode=hub&destination=${encodeURIComponent(hub.destination)}`}
               className={`group relative overflow-hidden rounded-xl border border-zinc-200/60 dark:border-zinc-800/60 bg-gradient-to-b ${hub.color} p-6 h-60 flex flex-col justify-between transition-all duration-300 hover:shadow-xl hover:-translate-y-1`}
             >
               <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full pointer-events-none group-hover:scale-110 transition-transform duration-300" />
@@ -119,7 +119,7 @@ export default async function HomePage() {
                   <RiArrowRightUpLine className="h-4 w-4" />
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
@@ -172,7 +172,7 @@ export default async function HomePage() {
                       <div className="flex items-center justify-between pb-4 border-b border-zinc-100 dark:border-zinc-900">
                         <div>
                           <span className="text-xs font-bold text-primary px-2.5 py-0.5 rounded-full bg-primary/10">
-                            {flight.airline}
+                            {flight.flight_no}
                           </span>
                           <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 ml-2">
                             {flight.flight_no}

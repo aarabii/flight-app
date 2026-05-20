@@ -38,16 +38,16 @@ interface BookingResult {
 interface SeatMapProps {
   flightId: string
   flightNo: string
-  airline: string
   basePrice: number
   origin: string
   destination: string
   onClose: () => void
 }
 
-export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destination, onClose }: SeatMapProps) {
+export function SeatMap({ flightId, flightNo, basePrice, origin, destination, onClose }: SeatMapProps) {
   const [seats, setSeats] = React.useState<Seat[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
+  const [fetchError, setFetchError] = React.useState<string | null>(null)
 
   // Zustand store variables with Next.js SSR hydration safety
   const storeSelectedSeat = useStoreHydration(useFlightStore, (state) => state.selectedSeat)
@@ -66,6 +66,34 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
   const addCachedBooking = useUserStore((state) => state.addCachedBooking)
   const setBookingStep = useFlightStore((state) => state.setBookingStep)
   const resetBookingFlow = useFlightStore((state) => state.resetBookingFlow)
+
+  const parseSeatParts = React.useCallback((seatNumber: string) => {
+    const match = seatNumber.match(/^(\d+)([A-Za-z]+)$/)
+    return {
+      row: match ? Number(match[1]) : Number.parseInt(seatNumber, 10),
+      letter: match ? match[2].toUpperCase() : seatNumber.replace(/\d/g, "").toUpperCase(),
+    }
+  }, [])
+
+  const getSeatButtonClasses = (seat: Seat, isSelected: boolean, sizeClass: string) =>
+    cn(
+      sizeClass,
+      "rounded-md font-bold transition-all flex flex-col items-center justify-center border relative",
+      !seat.is_available
+        ? "bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-400 dark:text-zinc-600 cursor-not-allowed"
+        : isSelected
+        ? "bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105"
+        : seat.class === "first"
+        ? "bg-amber-500/5 hover:bg-amber-500/10 border-amber-500/30 text-amber-600 hover:scale-105 cursor-pointer"
+        : seat.class === "business"
+        ? "bg-purple-500/5 hover:bg-purple-500/10 border-purple-500/30 text-purple-600 dark:text-purple-400 hover:scale-105 cursor-pointer"
+        : "bg-emerald-500/5 hover:bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:scale-105 cursor-pointer"
+    )
+
+  React.useEffect(() => {
+    setSelectedSeat(null)
+    setBookingStep("seating")
+  }, [flightId, setBookingStep, setSelectedSeat])
 
   // Local array state — one entry per passenger
   const [passengers, setPassengers] = React.useState<PassengerForm[]>(() =>
@@ -133,21 +161,22 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
     
     async function fetchSeats() {
       setIsLoading(true)
-      const { data } = await supabase
+      setFetchError(null)
+      const { data, error } = await supabase
         .from("seats")
-        .select("*")
+        .select("id, flight_id, seat_number, class, is_available, extra_fee")
         .eq("flight_id", flightId)
         .order("seat_number", { ascending: true })
       
-      if (data) {
-        // Sort seats numerically and then by seat letter
-        const sorted = ([...data] as Seat[]).sort((a, b) => {
-          const rowA = parseInt(a.seat_number)
-          const rowB = parseInt(b.seat_number)
-          if (rowA !== rowB) return rowA - rowB
-          const letterA = a.seat_number.replace(/[0-9]/g, '')
-          const letterB = b.seat_number.replace(/[0-9]/g, '')
-          return letterA.localeCompare(letterB)
+      if (error) {
+        setSeats([])
+        setFetchError(error.message)
+      } else {
+        const sorted = ([...(data || [])] as Seat[]).sort((a, b) => {
+          const seatA = parseSeatParts(a.seat_number)
+          const seatB = parseSeatParts(b.seat_number)
+          if (seatA.row !== seatB.row) return seatA.row - seatB.row
+          return seatA.letter.localeCompare(seatB.letter)
         })
         setSeats(sorted)
       }
@@ -155,7 +184,7 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
     }
 
     fetchSeats()
-  }, [flightId])
+  }, [flightId, parseSeatParts])
 
   // Supabase Realtime subscription — keep seat map live (FIX 3)
   React.useEffect(() => {
@@ -195,11 +224,14 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
   // Group seats by row number
   const groupedRows: Record<number, Seat[]> = {}
   seats.forEach((seat) => {
-    const rowNum = parseInt(seat.seat_number)
+    const rowNum = parseSeatParts(seat.seat_number).row
     if (!groupedRows[rowNum]) {
       groupedRows[rowNum] = []
     }
     groupedRows[rowNum].push(seat)
+  })
+  Object.values(groupedRows).forEach((rowSeats) => {
+    rowSeats.sort((a, b) => parseSeatParts(a.seat_number).letter.localeCompare(parseSeatParts(b.seat_number).letter))
   })
 
   // Get pricing by seat class
@@ -210,7 +242,7 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
   // Handle seat click
   const handleSelectSeat = (seat: Seat) => {
     if (!seat.is_available) return
-    const nextSeat = seat === selectedSeat ? null : seat
+    const nextSeat = selectedSeat?.id === seat.id ? null : seat
     setSelectedSeat(nextSeat)
     setSubmitError(null)
     if (nextSeat) {
@@ -282,7 +314,6 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
           flight: {
             id: flightId,
             flight_no: flightNo,
-            airline: airline,
             origin: origin,
             destination: destination,
             departs_at: data.departs_at || new Date().toISOString(),
@@ -442,12 +473,24 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
               <RiLoader4Line className="h-8 w-8 text-primary animate-spin" />
               <p className="text-xs text-zinc-400 font-medium">Fetching dynamic seat state...</p>
             </div>
+          ) : fetchError ? (
+            <div className="h-full flex items-center justify-center flex-col gap-2 text-center px-6">
+              <RiAlertFill className="h-8 w-8 text-destructive" />
+              <p className="text-sm font-bold text-zinc-700 dark:text-zinc-200">Unable to load seat map</p>
+              <p className="text-xs text-zinc-400 font-medium">{fetchError}</p>
+            </div>
+          ) : seats.length === 0 ? (
+            <div className="h-full flex items-center justify-center flex-col gap-2 text-center px-6">
+              <RiPlaneLine className="h-8 w-8 text-zinc-300" />
+              <p className="text-sm font-bold text-zinc-700 dark:text-zinc-200">No seats found for this flight</p>
+              <p className="text-xs text-zinc-400 font-medium">Seat inventory has not been generated yet.</p>
+            </div>
           ) : (
             <div className="w-full max-w-sm space-y-3">
               {Object.keys(groupedRows).map((rowStr) => {
                 const rowNum = parseInt(rowStr)
                 const rowSeats = groupedRows[rowNum]
-                const isFirstClass = rowNum <= 2
+                const isPremiumClass = rowNum <= 6
                 
                 return (
                   <div key={rowNum} className="flex items-center justify-between gap-4">
@@ -456,8 +499,8 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
                     
                     {/* Row Seats Display */}
                     <div className="flex-grow flex justify-center gap-2">
-                      {isFirstClass ? (
-                        // FIRST CLASS LAYOUT: 2-Aisle-2
+                      {isPremiumClass ? (
+                        // FIRST / BUSINESS LAYOUT: A B - aisle - E F
                         <>
                           {/* Left Seats (A, B) */}
                           <div className="flex gap-2">
@@ -468,17 +511,10 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
                                   key={seat.id}
                                   onClick={() => handleSelectSeat(seat)}
                                   disabled={!seat.is_available}
-                                  className={cn(
-                                    "h-9 w-9 rounded-md font-bold text-[10px] transition-all flex flex-col items-center justify-center border relative",
-                                    !seat.is_available
-                                      ? "bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-400 dark:text-zinc-600 cursor-not-allowed"
-                                      : isSelected
-                                      ? "bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105"
-                                      : "bg-amber-500/5 hover:bg-amber-500/10 border-amber-500/30 text-amber-600 hover:scale-105 cursor-pointer"
-                                  )}
-                                  title={`${seat.seat_number} - First Class (₹${getSeatCost(seat)})`}
+                                  className={getSeatButtonClasses(seat, isSelected, "h-9 w-9 text-[10px]")}
+                                  title={`${seat.seat_number} - ${seat.class} Class (₹${getSeatCost(seat)})`}
                                 >
-                                  {seat.seat_number.replace(/[0-9]/g, '')}
+                                  {parseSeatParts(seat.seat_number).letter}
                                   {!seat.is_available && <RiLockLine className="h-2 w-2 text-zinc-400 mt-0.5" />}
                                 </button>
                               )
@@ -499,17 +535,10 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
                                   key={seat.id}
                                   onClick={() => handleSelectSeat(seat)}
                                   disabled={!seat.is_available}
-                                  className={cn(
-                                    "h-9 w-9 rounded-md font-bold text-[10px] transition-all flex flex-col items-center justify-center border relative",
-                                    !seat.is_available
-                                      ? "bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-400 dark:text-zinc-600 cursor-not-allowed"
-                                      : isSelected
-                                      ? "bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105"
-                                      : "bg-amber-500/5 hover:bg-amber-500/10 border-amber-500/30 text-amber-600 hover:scale-105 cursor-pointer"
-                                  )}
-                                  title={`${seat.seat_number} - First Class (₹${getSeatCost(seat)})`}
+                                  className={getSeatButtonClasses(seat, isSelected, "h-9 w-9 text-[10px]")}
+                                  title={`${seat.seat_number} - ${seat.class} Class (₹${getSeatCost(seat)})`}
                                 >
-                                  {seat.seat_number.replace(/[0-9]/g, '')}
+                                  {parseSeatParts(seat.seat_number).letter}
                                   {!seat.is_available && <RiLockLine className="h-2 w-2 text-zinc-400 mt-0.5" />}
                                 </button>
                               )
@@ -523,25 +552,15 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
                           <div className="flex gap-1.5">
                             {rowSeats.slice(0, 3).map((seat) => {
                               const isSelected = selectedSeat?.id === seat.id
-                              const isBusiness = seat.class === "business"
                               return (
                                 <button
                                   key={seat.id}
                                   onClick={() => handleSelectSeat(seat)}
                                   disabled={!seat.is_available}
-                                  className={cn(
-                                    "h-8 w-8 rounded-md font-bold text-[9px] transition-all flex flex-col items-center justify-center border relative",
-                                    !seat.is_available
-                                      ? "bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-400 dark:text-zinc-600 cursor-not-allowed"
-                                      : isSelected
-                                      ? "bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105"
-                                      : isBusiness
-                                      ? "bg-purple-500/5 hover:bg-purple-500/10 border-purple-500/30 text-purple-600 dark:text-purple-400 hover:scale-105 cursor-pointer"
-                                      : "bg-emerald-500/5 hover:bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:scale-105 cursor-pointer"
-                                  )}
+                                  className={getSeatButtonClasses(seat, isSelected, "h-8 w-8 text-[9px]")}
                                   title={`${seat.seat_number} - ${seat.class} Class (₹${getSeatCost(seat)})`}
                                 >
-                                  {seat.seat_number.replace(/[0-9]/g, '')}
+                                  {parseSeatParts(seat.seat_number).letter}
                                   {!seat.is_available && <RiLockLine className="h-2 w-2 text-zinc-400 mt-0.5" />}
                                 </button>
                               )
@@ -555,25 +574,15 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
                           <div className="flex gap-1.5">
                             {rowSeats.slice(3, 6).map((seat) => {
                               const isSelected = selectedSeat?.id === seat.id
-                              const isBusiness = seat.class === "business"
                               return (
                                 <button
                                   key={seat.id}
                                   onClick={() => handleSelectSeat(seat)}
                                   disabled={!seat.is_available}
-                                  className={cn(
-                                    "h-8 w-8 rounded-md font-bold text-[9px] transition-all flex flex-col items-center justify-center border relative",
-                                    !seat.is_available
-                                      ? "bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-400 dark:text-zinc-600 cursor-not-allowed"
-                                      : isSelected
-                                      ? "bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105"
-                                      : isBusiness
-                                      ? "bg-purple-500/5 hover:bg-purple-500/10 border-purple-500/30 text-purple-600 dark:text-purple-400 hover:scale-105 cursor-pointer"
-                                      : "bg-emerald-500/5 hover:bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:scale-105 cursor-pointer"
-                                  )}
+                                  className={getSeatButtonClasses(seat, isSelected, "h-8 w-8 text-[9px]")}
                                   title={`${seat.seat_number} - ${seat.class} Class (₹${getSeatCost(seat)})`}
                                 >
-                                  {seat.seat_number.replace(/[0-9]/g, '')}
+                                  {parseSeatParts(seat.seat_number).letter}
                                   {!seat.is_available && <RiLockLine className="h-2 w-2 text-zinc-400 mt-0.5" />}
                                 </button>
                               )

@@ -16,7 +16,6 @@ export interface StoreUser {
 export interface CachedFlight {
   id?: string
   flight_no?: string
-  airline?: string
   origin?: string
   destination?: string
   departs_at?: string

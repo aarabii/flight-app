@@ -6,7 +6,6 @@ import { persist } from "zustand/middleware"
 export interface Flight {
   id: string
   flight_no: string
-  airline: string
   origin: string
   destination: string
   departs_at: string
