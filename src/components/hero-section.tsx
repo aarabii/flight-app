@@ -23,8 +23,7 @@ export function HeroSection() {
   }, []);
 
   return (
-    <section className="relative w-full min-h-125 md:min-h-150 py-24 md:py-32 overflow-hidden flex flex-col justify-center items-center">
-      {/* Background slideshow with crossfade animation */}
+    <section className="relative w-full min-h-80 md:min-h-125 py-24 md:py-32 overflow-hidden flex flex-col justify-center items-center">
       <div className="absolute inset-0 z-0 bg-zinc-950">
         {HERO_IMAGES.map((src, idx) => (
           <div
@@ -38,7 +37,7 @@ export function HeroSection() {
               alt={`FlyGo Travel Landscape ${idx + 1}`}
               fill
               priority={idx === 0}
-              className="object-cover blur-[5px] scale-105"
+              className="object-cover blur-[3px] scale-105"
             />
           </div>
         ))}
