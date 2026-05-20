@@ -127,7 +127,7 @@ export const useFlightStore = create<FlightStoreState & FlightStoreActions>()(
         })),
     }),
     {
-      name: "aerolux-flight-storage",
+      name: "flygo-flight-storage",
       partialize: (state) => ({
         searchState: state.searchState,
         selectedFlight: state.selectedFlight,

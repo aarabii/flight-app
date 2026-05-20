@@ -117,7 +117,7 @@ export const useUserStore = create<UserStoreState & UserStoreActions>()(
       clearSession: () => set({ user: null, cachedBookings: [] }),
     }),
     {
-      name: "aerolux-user-storage",
+      name: "flygo-user-storage",
       partialize: (state) => {
         // Strip out any passport information from traveler itinerary cache
         return {

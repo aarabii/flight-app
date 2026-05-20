@@ -4,8 +4,8 @@ import { cn } from "@/lib/utils";
 import { Navbar } from "@/components/navbar";
 
 export const metadata: Metadata = {
-  title: "AeroLux Airlines - Premium Flight Booking",
-  description: "Experience premium air travel with AeroLux. Search flights, select visual seat maps, and manage your luxury travel itineraries seamlessly.",
+  title: "FlyGo Airlines - Premium Flight Booking",
+  description: "Experience premium air travel with FlyGo. Search flights, select visual seat maps, and manage your luxury travel itineraries seamlessly.",
 };
 
 export default function RootLayout({
@@ -23,7 +23,7 @@ export default function RootLayout({
         <main className="flex-grow flex flex-col">{children}</main>
         <footer className="border-t border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-950 py-6 text-center text-sm text-zinc-500">
           <div className="container mx-auto px-4">
-            <p>© {new Date().getFullYear()} AeroLux Airlines. All rights reserved. Premium sky hospitality.</p>
+            <p>© {new Date().getFullYear()} FlyGo Airlines. All rights reserved. Premium sky hospitality.</p>
           </div>
         </footer>
       </body>

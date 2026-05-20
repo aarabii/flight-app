@@ -1,4 +1,4 @@
-# AeroLux Airlines
+# FlyGo Airlines
 
 Flight booking app for searching flights, selecting seats, booking trips, and managing bookings with Supabase.
 
@@ -54,7 +54,7 @@ Flight booking app for searching flights, selecting seats, booking trips, and ma
 ## Supabase Project Configuration
 
 - Enable Realtime for the `seats` table in the Supabase Dashboard under Database > Replication. Add `public.seats` to the `supabase_realtime` publication if it is not already enabled.
-- Create the test user in Authentication > Users. Add `test@aerolux.com` with password `Test@12345`.
+- Create the test user in Authentication > Users. Add `test@flygo.com` with password `Test@12345`.
 - If you need the manual UUID for a seeded booking, copy it from the user row after creation.
 
 ## Environment Variables
@@ -112,5 +112,5 @@ Flight booking app for searching flights, selecting seats, booking trips, and ma
 
 ## Test Credentials
 
-- Email: `test@aerolux.com`
+- Email: `test@flygo.com`
 - Password: `Test@12345`

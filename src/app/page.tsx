@@ -1,6 +1,7 @@
 import * as React from "react"
 import { createClient } from "@/utils/supabase/server"
 import { SearchPanel } from "@/components/search-panel"
+import { HeroSection } from "@/components/hero-section"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { RiPlaneLine, RiGlobeLine, RiArrowRightUpLine, RiCalendarLine } from "@remixicon/react"
@@ -53,31 +54,7 @@ export default async function HomePage() {
   return (
     <div className="flex-1 flex flex-col">
       {/* Hero Section */}
-      <section className="relative w-full py-24 md:py-32 overflow-hidden bg-zinc-950 text-white flex flex-col justify-center items-center">
-        {/* Subtle decorative grid and gradient overlay */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293710_1px,transparent_1px),linear-gradient(to_bottom,#1f293710_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
-        <div className="absolute inset-0 bg-gradient-to-tr from-purple-900/20 via-primary/10 to-indigo-900/30 opacity-70" />
-        
-        {/* Decorative ambient glowing circles */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-purple-600/10 blur-[120px] pointer-events-none" />
-
-        <div className="container mx-auto px-4 md:px-6 relative z-10 text-center space-y-6 max-w-4xl">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wider animate-pulse">
-            <RiPlaneLine className="h-3.5 w-3.5" />
-            The Future of Air Travel
-          </div>
-          
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight md:leading-none font-heading bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
-            Crafting Extraordinary <br className="hidden md:inline" />
-            Sky Journeys
-          </h1>
-          
-          <p className="text-base md:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed font-sans">
-            Welcome to AeroLux Airlines. Experience visual seat selection maps, real-time ticket locks, and seamless international schedules across global luxury hubs.
-          </p>
-        </div>
-      </section>
+      <HeroSection />
 
       {/* Interactive Search Panel Overlay */}
       <section className="container mx-auto px-4 md:px-6 relative z-10">

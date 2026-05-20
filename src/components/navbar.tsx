@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -82,11 +83,15 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-zinc-200/50 dark:border-zinc-800/50 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md transition-all">
       <div className="container mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
         {/* Brand Logo */}
-        <Link href="/" className="flex items-center gap-2 font-bold text-xl text-primary font-heading tracking-tight">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-white shadow-md shadow-primary/20">
-            <RiPlaneLine className="h-5 w-5 transform rotate-45" />
-          </div>
-          <span className="bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">AeroLux</span>
+        <Link href="/" className="flex items-center gap-2.5 font-bold text-xl text-primary font-heading tracking-tight">
+          <Image
+            src="/logo.png"
+            alt="FlyGo Logo"
+            width={36}
+            height={36}
+            className="object-contain h-9 w-9"
+          />
+          <span className="bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">FlyGo</span>
         </Link>
 
         {/* Desktop Nav Links */}

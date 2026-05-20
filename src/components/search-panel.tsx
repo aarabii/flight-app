@@ -258,7 +258,7 @@ export function SearchPanel({ className }: SearchPanelProps = {}) {
             </span>
             <Button type="submit" size="lg" className="px-6 font-semibold shadow-lg shadow-primary/25 cursor-pointer">
               <RiSearchLine className="mr-2 h-4 w-4" />
-              Search AeroLux Flights
+              Search FlyGo Flights
             </Button>
           </div>
         </form>

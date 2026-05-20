@@ -1,5 +1,5 @@
 -- TEST USER: Must be created manually in Supabase Dashboard → Authentication → Users
--- Email: test@aerolux.com
+-- Email: test@flygo.com
 -- Password: Test@12345
 -- After creating, copy the UUID and use it to pre-seed a test booking if desired.
 

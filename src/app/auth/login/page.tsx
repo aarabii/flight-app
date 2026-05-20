@@ -87,7 +87,7 @@ function LoginForm() {
             <RiPlaneLine className="h-6 w-6 animate-pulse" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 font-heading">
-            AeroLux Airlines
+            FlyGo Airlines
           </h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
             Sign in to book flights, select seat maps, and manage itineraries.
@@ -127,7 +127,7 @@ function LoginForm() {
                         <div className="relative">
                           <RiMailLine className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
                           <Input
-                            placeholder="traveler@aerolux.com"
+                            placeholder="traveler@flygo.com"
                             className="pl-9 h-10"
                             type="email"
                             disabled={isLoading}
