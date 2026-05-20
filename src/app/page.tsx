@@ -30,9 +30,12 @@ export default async function HomePage() {
 
   try {
     const supabase = await createClient();
+    const nowIso = new Date().toISOString();
     const { data, error } = await supabase
       .from("flights")
       .select("*")
+      .eq("status", "scheduled")
+      .gte("departs_at", nowIso)
       .order("departs_at", { ascending: true })
       .limit(6);
 

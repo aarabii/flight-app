@@ -62,15 +62,24 @@ export function FlightResults({
   const [isEditingSearch, setIsEditingSearch] = React.useState(false);
   const [sortBy, setSortBy] = React.useState<string>("price-asc");
   const [selectedAircraft, setSelectedAircraft] = React.useState<string>("all");
+  const [resultsCutoffMs] = React.useState(() => Date.now());
 
   // Filters and Sortings
+  const upcomingFlights = React.useMemo(() => {
+    return flights.filter(
+      (flight) =>
+        flight.status === "scheduled" &&
+        new Date(flight.departs_at).getTime() > resultsCutoffMs,
+    );
+  }, [flights, resultsCutoffMs]);
+
   const uniqueAircrafts = React.useMemo(() => {
-    const aircrafts = flights.map((f) => f.aircraft_type).filter(Boolean);
+    const aircrafts = upcomingFlights.map((f) => f.aircraft_type).filter(Boolean);
     return Array.from(new Set(aircrafts));
-  }, [flights]);
+  }, [upcomingFlights]);
 
   const filteredFlights = React.useMemo(() => {
-    return flights.filter((flight) => {
+    return upcomingFlights.filter((flight) => {
       if (
         selectedAircraft !== "all" &&
         flight.aircraft_type !== selectedAircraft
@@ -79,7 +88,7 @@ export function FlightResults({
       }
       return true;
     });
-  }, [flights, selectedAircraft]);
+  }, [upcomingFlights, selectedAircraft]);
 
   const sortedFlights = React.useMemo(() => {
     return [...filteredFlights].sort((a, b) => {
@@ -264,7 +273,7 @@ export function FlightResults({
               <SearchPanel />
             </div>
           </div>
-        ) : flights.length === 0 ? (
+        ) : upcomingFlights.length === 0 ? (
           // No flights found state
           <Card className="border border-zinc-200 dark:border-zinc-800 p-12 text-center shadow-lg bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl">
             <CardContent className="space-y-4">

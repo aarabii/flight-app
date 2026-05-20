@@ -43,6 +43,62 @@ type RescheduleFlight = Required<
   Pick<CachedFlight, "id" | "flight_no" | "origin" | "destination" | "departs_at" | "arrives_at" | "base_price" | "status">
 >;
 
+const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+
+function getTimeUntilDepartureLabel(departsAt: string, now: Date) {
+  const departsMs = new Date(departsAt).getTime();
+
+  if (Number.isNaN(departsMs)) {
+    return null;
+  }
+
+  const diffMs = departsMs - now.getTime();
+
+  if (diffMs <= 0) {
+    return "Flight departed";
+  }
+
+  const totalMinutes = Math.ceil(diffMs / (1000 * 60));
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+
+  if (days > 0) {
+    return `${days}d ${hours}h left`;
+  }
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m left`;
+  }
+
+  return `${Math.max(minutes, 1)}m left`;
+}
+
+function getCancellationLockMessage(
+  flightNo: string | undefined,
+  departsAt: string,
+  now: Date,
+) {
+  const departsMs = new Date(departsAt).getTime();
+
+  if (Number.isNaN(departsMs)) {
+    return null;
+  }
+
+  const diffMs = departsMs - now.getTime();
+  const displayFlightNo = flightNo || "This flight";
+
+  if (diffMs <= 0) {
+    return `${displayFlightNo} has already departed, so this booking can no longer be cancelled.`;
+  }
+
+  if (diffMs <= TWO_HOURS_MS) {
+    return `${displayFlightNo} departs in less than 2 hours, so the cancellation window has closed.`;
+  }
+
+  return null;
+}
+
 export default function BookingsPage() {
   const isHydrated = useStoreHydration(useUserStore, () => true) ?? false;
   const cachedBookings = useUserStore((state) => state.cachedBookings);
@@ -56,6 +112,10 @@ export default function BookingsPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
   const [toastMessage, setToastMessage] = React.useState<string | null>(null);
+  const [currentTime, setCurrentTime] = React.useState(() => new Date());
+  const [cancelRuleMessage, setCancelRuleMessage] = React.useState<
+    string | null
+  >(null);
 
   // Cancellation Dialog states
   const [cancellingBooking, setCancellingBooking] = React.useState<CachedBooking | null>(
@@ -188,6 +248,14 @@ export default function BookingsPage() {
       }, 1500);
     }
   };
+
+  React.useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60 * 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   React.useEffect(() => {
     if (!toastMessage) return;
@@ -456,6 +524,14 @@ export default function BookingsPage() {
 
             const isCancelled = booking.status === "cancelled";
             const canReschedule = booking.status === "confirmed";
+            const timeUntilDeparture = !isCancelled
+              ? getTimeUntilDepartureLabel(departsAt, currentTime)
+              : null;
+            const cancellationLockMessage = getCancellationLockMessage(
+              flight?.flight_no,
+              departsAt,
+              currentTime,
+            );
             const bookingDate =
               booking.booked_at ||
               booking.created_at ||
@@ -520,6 +596,12 @@ export default function BookingsPage() {
                       <RiPlaneLine className="h-3.5 w-3.5" />
                       {flight?.aircraft_type || "Boeing 737-800"}
                     </p>
+                    {timeUntilDeparture && (
+                      <p className="text-xs font-semibold text-primary flex items-center gap-1">
+                        <RiTimerLine className="h-3.5 w-3.5" />
+                        {timeUntilDeparture}
+                      </p>
+                    )}
                   </div>
 
                   {/* Route Timeline (5 Cols) */}
@@ -613,83 +695,97 @@ export default function BookingsPage() {
                           Reschedule
                         </Button>
 
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setCancellingBooking(booking);
-                                setCancelError(null);
-                                setCancelSuccess(false);
-                              }}
-                              className="w-full md:w-auto text-xs text-destructive hover:bg-destructive/5 hover:text-destructive border-destructive/20 cursor-pointer"
-                            >
-                              Cancel Booking
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>
-                                Cancel this booking?
-                              </AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This action cannot be undone. Your seat will be
-                                released.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-
-                            {cancelError && (
-                              <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-xs text-destructive border border-destructive/20 font-medium">
-                                <RiAlertFill className="h-4 w-4 shrink-0" />
-                                <span>{cancelError}</span>
-                              </div>
-                            )}
-
-                            {cancelSuccess && (
-                              <div className="flex items-center gap-2 rounded-lg bg-green-500/10 p-3 text-xs text-green-600 dark:text-green-400 border border-green-500/20 font-medium">
-                                <RiCheckDoubleLine className="h-4 w-4 shrink-0" />
-                                <span>
-                                  Ticket cancelled. Seat released successfully!
-                                </span>
-                              </div>
-                            )}
-
-                            <div className="py-2 text-xs text-zinc-500 dark:text-zinc-400 space-y-1 bg-zinc-50 dark:bg-zinc-900 p-3 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50">
-                              <p className="font-bold text-zinc-700 dark:text-zinc-300">
-                                Cancellation Rule Checklist:
-                              </p>
-                              <p>
-                                • Bookings departing in less than 2 hours are
-                                locked and non-refundable.
-                              </p>
-                              <p>
-                                • Once cancelled, the seat map will be updated
-                                instantly for other travelers.
-                              </p>
-                            </div>
-
-                            <AlertDialogFooter>
-                              <AlertDialogCancel className="cursor-pointer">
-                                Keep Booking
-                              </AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={handleCancelConfirm}
-                                disabled={isCancelling || cancelSuccess}
-                                className="font-semibold cursor-pointer"
+                        {cancellationLockMessage ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              setCancelRuleMessage(cancellationLockMessage)
+                            }
+                            className="w-full md:w-auto text-xs text-destructive hover:bg-destructive/5 hover:text-destructive border-destructive/20 cursor-pointer"
+                          >
+                            Cancel Booking
+                          </Button>
+                        ) : (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setCancellingBooking(booking);
+                                  setCancelError(null);
+                                  setCancelSuccess(false);
+                                }}
+                                className="w-full md:w-auto text-xs text-destructive hover:bg-destructive/5 hover:text-destructive border-destructive/20 cursor-pointer"
                               >
-                                {isCancelling ? (
-                                  <span className="flex items-center gap-1.5">
-                                    <RiLoader4Line className="h-4 w-4 animate-spin" />
-                                    Cancelling...
+                                Cancel Booking
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Cancel this booking?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This action cannot be undone. Your seat will
+                                  be released.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+
+                              {cancelError && (
+                                <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-xs text-destructive border border-destructive/20 font-medium">
+                                  <RiAlertFill className="h-4 w-4 shrink-0" />
+                                  <span>{cancelError}</span>
+                                </div>
+                              )}
+
+                              {cancelSuccess && (
+                                <div className="flex items-center gap-2 rounded-lg bg-green-500/10 p-3 text-xs text-green-600 dark:text-green-400 border border-green-500/20 font-medium">
+                                  <RiCheckDoubleLine className="h-4 w-4 shrink-0" />
+                                  <span>
+                                    Ticket cancelled. Seat released
+                                    successfully!
                                   </span>
-                                ) : (
-                                  "Confirm Cancel"
-                                )}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                                </div>
+                              )}
+
+                              <div className="py-2 text-xs text-zinc-500 dark:text-zinc-400 space-y-1 bg-zinc-50 dark:bg-zinc-900 p-3 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50">
+                                <p className="font-bold text-zinc-700 dark:text-zinc-300">
+                                  Cancellation Rule Checklist:
+                                </p>
+                                <p>
+                                  • Bookings departing in less than 2 hours are
+                                  locked and non-refundable.
+                                </p>
+                                <p>
+                                  • Once cancelled, the seat map will be updated
+                                  instantly for other travelers.
+                                </p>
+                              </div>
+
+                              <AlertDialogFooter>
+                                <AlertDialogCancel className="cursor-pointer">
+                                  Keep Booking
+                                </AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={handleCancelConfirm}
+                                  disabled={isCancelling || cancelSuccess}
+                                  className="font-semibold cursor-pointer"
+                                >
+                                  {isCancelling ? (
+                                    <span className="flex items-center gap-1.5">
+                                      <RiLoader4Line className="h-4 w-4 animate-spin" />
+                                      Cancelling...
+                                    </span>
+                                  ) : (
+                                    "Confirm Cancel"
+                                  )}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </div>
                     )}
                   </div>
@@ -713,6 +809,25 @@ export default function BookingsPage() {
           </div>
         </div>
       )}
+      <Dialog
+        open={Boolean(cancelRuleMessage)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCancelRuleMessage(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cancellation window closed</DialogTitle>
+            <DialogDescription>{cancelRuleMessage}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setCancelRuleMessage(null)}>Okay</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog
         open={isRescheduleDialogOpen}
         onOpenChange={(open) => {

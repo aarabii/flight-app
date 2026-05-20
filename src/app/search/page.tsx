@@ -29,6 +29,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const isHubSchedule = mode === "hub" && Boolean(destination)
 
   let flights: Flight[] = []
+  const nowIso = new Date().toISOString()
 
   if (isHubSchedule) {
     const supabase = await createServerClient()
@@ -38,7 +39,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       .select("id, flight_no, origin, destination, departs_at, arrives_at, aircraft_type, status, base_price")
       .eq("destination", destination)
       .eq("status", "scheduled")
-      .gte("departs_at", new Date().toISOString())
+      .gte("departs_at", nowIso)
       .order("departs_at", { ascending: true })
 
     if (!error && data) {
@@ -46,13 +47,18 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     }
   } else if (origin && destination && date) {
     const supabase = await createServerClient()
+    const selectedDayStartIso = `${date}T00:00:00.000Z`
+    const minDepartureIso =
+      new Date(selectedDayStartIso) > new Date(nowIso)
+        ? selectedDayStartIso
+        : nowIso
 
     const { data, error } = await supabase
       .from("flights")
       .select("id, flight_no, origin, destination, departs_at, arrives_at, aircraft_type, status, base_price")
       .eq("origin", origin)
       .eq("destination", destination)
-      .gte("departs_at", `${date}T00:00:00.000Z`)
+      .gte("departs_at", minDepartureIso)
       .lte("departs_at", `${date}T23:59:59.999Z`)
       .eq("status", "scheduled")
       .order("departs_at", { ascending: true })
