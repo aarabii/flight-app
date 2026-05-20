@@ -1,55 +1,84 @@
-import * as React from "react"
-import { createClient } from "@/utils/supabase/server"
-import { SearchPanel } from "@/components/search-panel"
-import { HeroSection } from "@/components/hero-section"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { RiPlaneLine, RiGlobeLine, RiArrowRightUpLine, RiCalendarLine } from "@remixicon/react"
+import * as React from "react";
+import { createClient } from "@/utils/supabase/server";
+import { SearchPanel } from "@/components/search-panel";
+import { HeroSection } from "@/components/hero-section";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  RiPlaneLine,
+  RiGlobeLine,
+  RiArrowRightUpLine,
+  RiCalendarLine,
+} from "@remixicon/react";
 
-export const revalidate = 0 // Keep landing page flight boards fully real-time
+export const revalidate = 0; // Keep landing page flight boards fully real-time
 
 interface FlightListing {
-  id: string
-  flight_no: string
-  origin: string
-  destination: string
-  departs_at: string
-  arrives_at: string
-  status: string
-  base_price: number
+  id: string;
+  flight_no: string;
+  origin: string;
+  destination: string;
+  departs_at: string;
+  arrives_at: string;
+  status: string;
+  base_price: number;
 }
 
 export default async function HomePage() {
-  let flights: FlightListing[] = []
-  let errorMsg: string | null = null
+  let flights: FlightListing[] = [];
+  let errorMsg: string | null = null;
 
   try {
-    const supabase = await createClient()
+    const supabase = await createClient();
     const { data, error } = await supabase
       .from("flights")
       .select("*")
       .order("departs_at", { ascending: true })
-      .limit(6)
+      .limit(6);
 
     if (error) {
-      errorMsg = error.message
+      errorMsg = error.message;
     } else {
-      flights = (data || []) as FlightListing[]
+      flights = (data || []) as FlightListing[];
     }
   } catch (err: unknown) {
     errorMsg =
       err instanceof Error
         ? err.message
-        : "Failed to retrieve scheduled flight listings."
+        : "Failed to retrieve scheduled flight listings.";
   }
 
   // Curated Luxury Destination Hubs
   const HUBS = [
-    { city: "London", airport: "Heathrow (LHR T5)", destination: "LHR (Heathrow T5)", tag: "Royal Charm", color: "from-blue-600/20 to-indigo-600/20" },
-    { city: "Dubai", airport: "Dubai Intl (DXB T3)", destination: "DXB (Dubai T3)", tag: "Futuristic Luxury", color: "from-amber-600/20 to-orange-600/20" },
-    { city: "Tokyo", airport: "Narita Airport (NRT T1)", destination: "NRT (Narita T1)", tag: "Zen Heritage", color: "from-rose-600/20 to-red-600/20" },
-    { city: "New York", airport: "JFK Intl (JFK T8)", destination: "JFK (Kennedy T8)", tag: "Urban Horizon", color: "from-purple-600/20 to-indigo-600/20" },
-  ]
+    {
+      city: "London",
+      airport: "Heathrow (LHR T5)",
+      destination: "LHR (Heathrow T5)",
+      tag: "Royal Charm",
+      color: "from-blue-600/20 to-indigo-600/20",
+    },
+    {
+      city: "Dubai",
+      airport: "Dubai Intl (DXB T3)",
+      destination: "DXB (Dubai T3)",
+      tag: "Futuristic Luxury",
+      color: "from-amber-600/20 to-orange-600/20",
+    },
+    {
+      city: "Tokyo",
+      airport: "Narita Airport (NRT T1)",
+      destination: "NRT (Narita T1)",
+      tag: "Zen Heritage",
+      color: "from-rose-600/20 to-red-600/20",
+    },
+    {
+      city: "New York",
+      airport: "JFK Intl (JFK T8)",
+      destination: "JFK (Kennedy T8)",
+      tag: "Urban Horizon",
+      color: "from-purple-600/20 to-indigo-600/20",
+    },
+  ];
 
   return (
     <div className="flex-1 flex flex-col">
@@ -70,7 +99,8 @@ export default async function HomePage() {
               Signature Hub Destinations
             </h2>
             <p className="text-zinc-500 dark:text-zinc-400">
-              Traverse the globe with premium class luxury services and custom seating.
+              Traverse the globe with premium class luxury services and custom
+              seating.
             </p>
           </div>
         </div>
@@ -87,11 +117,17 @@ export default async function HomePage() {
                 <span className="inline-flex px-2.5 py-0.5 rounded-full bg-white/60 dark:bg-zinc-800/60 border border-zinc-200/30 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
                   {hub.tag}
                 </span>
-                <h3 className="text-2xl font-bold font-heading mt-3 text-zinc-900 dark:text-zinc-50">{hub.city}</h3>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">{hub.airport}</p>
+                <h3 className="text-2xl font-bold font-heading mt-3 text-zinc-900 dark:text-zinc-50">
+                  {hub.city}
+                </h3>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                  {hub.airport}
+                </p>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-primary dark:text-purple-400">View schedules</span>
+                <span className="text-xs font-medium text-primary dark:text-purple-400">
+                  View schedules
+                </span>
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white dark:bg-zinc-900 shadow-md group-hover:bg-primary group-hover:text-white transition-colors">
                   <RiArrowRightUpLine className="h-4 w-4" />
                 </div>
@@ -111,7 +147,8 @@ export default async function HomePage() {
                 Live Boarding & Featured Deals
               </h2>
               <p className="text-zinc-500 dark:text-zinc-400">
-                Explore real-time schedules currently tracked in our traveler hubs. Select any route to configure seating maps.
+                Explore real-time schedules currently tracked in our traveler
+                hubs. Select any route to configure seating maps.
               </p>
             </div>
           </div>
@@ -122,22 +159,34 @@ export default async function HomePage() {
             </div>
           ) : flights.length === 0 ? (
             <div className="rounded-lg border border-zinc-200/50 dark:border-zinc-800/50 p-8 text-center text-zinc-400 bg-white/50 dark:bg-zinc-950/50 backdrop-blur">
-              No flights found. Please make sure migrations and seeding executed correctly.
+              No flights found. Please make sure migrations and seeding executed
+              correctly.
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {flights.map((flight) => {
-                const depDate = new Date(flight.departs_at)
-                const depTime = depDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
-                const depDateFormatted = depDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })
-                
-                const arrDate = new Date(flight.arrives_at)
-                const arrTime = arrDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+                const depDate = new Date(flight.departs_at);
+                const depTime = depDate.toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                });
+                const depDateFormatted = depDate.toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                });
+
+                const arrDate = new Date(flight.arrives_at);
+                const arrTime = arrDate.toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                });
 
                 // Duration Calculation
-                const durationMs = arrDate.getTime() - depDate.getTime()
-                const hours = Math.floor(durationMs / (1000 * 60 * 60))
-                const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60))
+                const durationMs = arrDate.getTime() - depDate.getTime();
+                const hours = Math.floor(durationMs / (1000 * 60 * 60));
+                const minutes = Math.floor(
+                  (durationMs % (1000 * 60 * 60)) / (1000 * 60),
+                );
 
                 return (
                   <div
@@ -165,23 +214,43 @@ export default async function HomePage() {
                       <div className="py-4 space-y-3">
                         <div className="flex items-start justify-between">
                           <div className="space-y-0.5">
-                            <p className="text-xs text-zinc-400 dark:text-zinc-500 font-medium">Departure</p>
-                            <p className="text-base font-bold text-zinc-800 dark:text-zinc-200">{flight.origin.split(" ")[0]}</p>
-                            <p className="text-xs text-zinc-500">{flight.origin.substring(flight.origin.indexOf("("))}</p>
+                            <p className="text-xs text-zinc-400 dark:text-zinc-500 font-medium">
+                              Departure
+                            </p>
+                            <p className="text-base font-bold text-zinc-800 dark:text-zinc-200">
+                              {flight.origin.split(" ")[0]}
+                            </p>
+                            <p className="text-xs text-zinc-500">
+                              {flight.origin.substring(
+                                flight.origin.indexOf("("),
+                              )}
+                            </p>
                           </div>
-                          
+
                           <div className="flex flex-col items-center justify-center flex-1 px-4 py-1">
-                            <p className="text-[10px] text-zinc-400 dark:text-zinc-500 font-semibold">{hours}h {minutes}m</p>
+                            <p className="text-[10px] text-zinc-400 dark:text-zinc-500 font-semibold">
+                              {hours}h {minutes}m
+                            </p>
                             <div className="relative w-full border-t border-dashed border-zinc-300 dark:border-zinc-700 my-1.5">
                               <RiPlaneLine className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400 transform rotate-90" />
                             </div>
-                            <p className="text-[10px] text-zinc-400 font-medium">Direct</p>
+                            <p className="text-[10px] text-zinc-400 font-medium">
+                              Direct
+                            </p>
                           </div>
 
                           <div className="space-y-0.5 text-right">
-                            <p className="text-xs text-zinc-400 dark:text-zinc-500 font-medium">Arrival</p>
-                            <p className="text-base font-bold text-zinc-800 dark:text-zinc-200">{flight.destination.split(" ")[0]}</p>
-                            <p className="text-xs text-zinc-500">{flight.destination.substring(flight.destination.indexOf("("))}</p>
+                            <p className="text-xs text-zinc-400 dark:text-zinc-500 font-medium">
+                              Arrival
+                            </p>
+                            <p className="text-base font-bold text-zinc-800 dark:text-zinc-200">
+                              {flight.destination.split(" ")[0]}
+                            </p>
+                            <p className="text-xs text-zinc-500">
+                              {flight.destination.substring(
+                                flight.destination.indexOf("("),
+                              )}
+                            </p>
                           </div>
                         </div>
 
@@ -196,31 +265,35 @@ export default async function HomePage() {
                       </div>
                     </div>
 
-                    {/* Booking Footer */}
                     <div className="flex items-center justify-between pt-4 border-t border-zinc-100 dark:border-zinc-900">
                       <div>
-                        <p className="text-[10px] text-zinc-400 font-semibold uppercase tracking-wider">Base Price</p>
+                        <p className="text-[10px] text-zinc-400 font-semibold uppercase tracking-wider">
+                          Base Price
+                        </p>
                         <p className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
                           ₹{Number(flight.base_price).toLocaleString("en-IN")}
                         </p>
                       </div>
                       <Link
                         href={`/search?origin=${encodeURIComponent(flight.origin)}&destination=${encodeURIComponent(
-                          flight.destination
+                          flight.destination,
                         )}&date=${depDate.toISOString().split("T")[0]}`}
                       >
-                        <Button size="sm" className="font-semibold shadow shadow-primary/10 cursor-pointer">
+                        <Button
+                          size="sm"
+                          className="font-semibold shadow shadow-primary/10 cursor-pointer"
+                        >
                           Select Seating
                         </Button>
                       </Link>
                     </div>
                   </div>
-                )
+                );
               })}
             </div>
           )}
         </div>
       </section>
     </div>
-  )
+  );
 }
