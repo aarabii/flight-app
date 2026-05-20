@@ -38,7 +38,11 @@ const CLASSES = [
 
 import { useFlightStore } from "@/store/useFlightStore"
 
-export function SearchPanel() {
+interface SearchPanelProps {
+  className?: string
+}
+
+export function SearchPanel({ className }: SearchPanelProps = {}) {
   const router = useRouter()
   const searchState = useFlightStore((state) => state.searchState)
   const setSearchState = useFlightStore((state) => state.setSearchState)
@@ -109,7 +113,7 @@ export function SearchPanel() {
   }
 
   return (
-    <Card className="w-full shadow-2xl border border-zinc-200/60 dark:border-zinc-800/60 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl -mt-16 relative z-10 overflow-hidden">
+    <Card className={cn("w-full shadow-2xl border border-zinc-200/60 dark:border-zinc-800/60 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl -mt-16 relative z-10 overflow-hidden", className)}>
       <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-primary via-purple-500 to-indigo-600" />
       <CardContent className="p-6">
         <form onSubmit={handleSearch} className="space-y-6">

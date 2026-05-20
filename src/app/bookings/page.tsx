@@ -374,7 +374,7 @@ export default function BookingsPage() {
           {errorMsg}
         </div>
       ) : bookings.length === 0 ? (
-        <div className="space-y-10">
+        <div className="space-y-12">
           <Card className="border border-dashed border-zinc-200 dark:border-zinc-800 p-16 text-center shadow bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md">
             <CardContent className="space-y-4">
             <div className="h-12 w-12 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/30 text-zinc-400 flex items-center justify-center mx-auto">
@@ -382,7 +382,7 @@ export default function BookingsPage() {
             </div>
             <div className="space-y-1.5 max-w-sm mx-auto">
               <h3 className="text-lg font-bold font-heading">
-                You do not have any bookings
+                you dont have booking
               </h3>
               <p className="text-xs text-zinc-500 leading-relaxed">
                 Book now to create your first visual seat booking and flight
@@ -398,10 +398,23 @@ export default function BookingsPage() {
             </div>
             </CardContent>
           </Card>
-          <SearchPanel />
+
+          <div className="space-y-6 pt-6 border-t border-zinc-200/50 dark:border-zinc-800/50">
+            <div className="space-y-1">
+              <h2 className="text-xl font-bold tracking-tight font-heading flex items-center gap-2">
+                <RiPlaneLine className="h-5 w-5 text-primary transform rotate-45" />
+                Search for Flights
+              </h2>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                Quickly locate flights to book your visual seat allocation.
+              </p>
+            </div>
+            <SearchPanel className="mt-0" />
+          </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6">
+        <div className="space-y-12">
+          <div className="grid grid-cols-1 gap-6">
           {bookings.map((booking) => {
             const flight = Array.isArray(booking.flights)
               ? booking.flights[0]
@@ -684,6 +697,20 @@ export default function BookingsPage() {
               </Card>
             );
           })}
+          </div>
+
+          <div className="space-y-6 pt-6 border-t border-zinc-200/50 dark:border-zinc-800/50">
+            <div className="space-y-1">
+              <h2 className="text-xl font-bold tracking-tight font-heading flex items-center gap-2">
+                <RiPlaneLine className="h-5 w-5 text-primary transform rotate-45" />
+                Search for Flights
+              </h2>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                Quickly locate flights to book your next visual seat allocation.
+              </p>
+            </div>
+            <SearchPanel className="mt-0" />
+          </div>
         </div>
       )}
       <Dialog
