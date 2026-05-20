@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { SeatMap } from "@/components/seat-map"
-import { SearchPanel } from "@/components/search-panel"
+import * as React from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { SeatMap } from "@/components/seat-map";
+import { SearchPanel } from "@/components/search-panel";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   RiPlaneLine,
   RiSearchEyeLine,
@@ -21,22 +21,22 @@ import {
   RiTimerLine,
   RiArrowRightLine,
   RiGroupLine,
-} from "@remixicon/react"
+} from "@remixicon/react";
 
-import { useFlightStore } from "@/store/useFlightStore"
-import { useStoreHydration } from "@/store/useStoreHydration"
-import type { Flight } from "@/store/useFlightStore"
+import { useFlightStore } from "@/store/useFlightStore";
+import { useStoreHydration } from "@/store/useStoreHydration";
+import type { Flight } from "@/store/useFlightStore";
 
 interface FlightResultsProps {
-  flights: Flight[]
-  passengerCount: number
-  isHubSchedule?: boolean
+  flights: Flight[];
+  passengerCount: number;
+  isHubSchedule?: boolean;
   searchParams: {
-    origin: string
-    destination: string
-    date: string
-    selectedClass: string
-  }
+    origin: string;
+    destination: string;
+    date: string;
+    selectedClass: string;
+  };
 }
 
 export function FlightResults({
@@ -46,76 +46,101 @@ export function FlightResults({
   searchParams: { origin, destination, date: dateStr, selectedClass },
 }: FlightResultsProps) {
   // Zustand state for selected flight (seat map modal trigger)
-  const storeSelectedFlight = useStoreHydration(useFlightStore, (state) => state.selectedFlight)
-  const activeFlight = storeSelectedFlight !== undefined ? storeSelectedFlight : null
+  const storeSelectedFlight = useStoreHydration(
+    useFlightStore,
+    (state) => state.selectedFlight,
+  );
+  const activeFlight =
+    storeSelectedFlight !== undefined ? storeSelectedFlight : null;
 
-  const setSelectedFlight = useFlightStore((state) => state.setSelectedFlight)
-  const setSelectedSeat    = useFlightStore((state) => state.setSelectedSeat)
-  const setBookingStep    = useFlightStore((state) => state.setBookingStep)
-  const setSearchState    = useFlightStore((state) => state.setSearchState)
+  const setSelectedFlight = useFlightStore((state) => state.setSelectedFlight);
+  const setSelectedSeat = useFlightStore((state) => state.setSelectedSeat);
+  const setBookingStep = useFlightStore((state) => state.setBookingStep);
+  const setSearchState = useFlightStore((state) => state.setSearchState);
 
   // Local States
-  const [isEditingSearch, setIsEditingSearch] = React.useState(false)
-  const [sortBy, setSortBy] = React.useState<string>("price-asc")
-  const [selectedAircraft, setSelectedAircraft] = React.useState<string>("all")
+  const [isEditingSearch, setIsEditingSearch] = React.useState(false);
+  const [sortBy, setSortBy] = React.useState<string>("price-asc");
+  const [selectedAircraft, setSelectedAircraft] = React.useState<string>("all");
 
   // Filters and Sortings
   const uniqueAircrafts = React.useMemo(() => {
-    const aircrafts = flights.map((f) => f.aircraft_type).filter(Boolean)
-    return Array.from(new Set(aircrafts))
-  }, [flights])
+    const aircrafts = flights.map((f) => f.aircraft_type).filter(Boolean);
+    return Array.from(new Set(aircrafts));
+  }, [flights]);
 
   const filteredFlights = React.useMemo(() => {
     return flights.filter((flight) => {
-      if (selectedAircraft !== "all" && flight.aircraft_type !== selectedAircraft) {
-        return false
+      if (
+        selectedAircraft !== "all" &&
+        flight.aircraft_type !== selectedAircraft
+      ) {
+        return false;
       }
-      return true
-    })
-  }, [flights, selectedAircraft])
+      return true;
+    });
+  }, [flights, selectedAircraft]);
 
   const sortedFlights = React.useMemo(() => {
     return [...filteredFlights].sort((a, b) => {
       if (sortBy === "price-asc") {
-        return Number(a.base_price) - Number(b.base_price)
+        return Number(a.base_price) - Number(b.base_price);
       }
       if (sortBy === "price-desc") {
-        return Number(b.base_price) - Number(a.base_price)
+        return Number(b.base_price) - Number(a.base_price);
       }
       if (sortBy === "departs-asc") {
-        return new Date(a.departs_at).getTime() - new Date(b.departs_at).getTime()
+        return (
+          new Date(a.departs_at).getTime() - new Date(b.departs_at).getTime()
+        );
       }
       if (sortBy === "departs-desc") {
-        return new Date(b.departs_at).getTime() - new Date(a.departs_at).getTime()
+        return (
+          new Date(b.departs_at).getTime() - new Date(a.departs_at).getTime()
+        );
       }
       if (sortBy === "arrives-asc") {
-        return new Date(a.arrives_at).getTime() - new Date(b.arrives_at).getTime()
+        return (
+          new Date(a.arrives_at).getTime() - new Date(b.arrives_at).getTime()
+        );
       }
       if (sortBy === "duration-asc") {
-        const durationA = new Date(a.arrives_at).getTime() - new Date(a.departs_at).getTime()
-        const durationB = new Date(b.arrives_at).getTime() - new Date(b.departs_at).getTime()
-        return durationA - durationB
+        const durationA =
+          new Date(a.arrives_at).getTime() - new Date(a.departs_at).getTime();
+        const durationB =
+          new Date(b.arrives_at).getTime() - new Date(b.departs_at).getTime();
+        return durationA - durationB;
       }
-      return 0
-    })
-  }, [filteredFlights, sortBy])
+      return 0;
+    });
+  }, [filteredFlights, sortBy]);
 
   // Sync URL params back into the store so the rest of the booking flow has them
   React.useEffect(() => {
-    if (!isHubSchedule && (origin || destination || dateStr || selectedClass || passengerCount)) {
+    if (
+      !isHubSchedule &&
+      (origin || destination || dateStr || selectedClass || passengerCount)
+    ) {
       setSearchState({
         origin,
         destination,
         date: dateStr,
         class: selectedClass,
         passengerCount,
-      })
+      });
     }
-  }, [isHubSchedule, origin, destination, dateStr, selectedClass, passengerCount, setSearchState])
+  }, [
+    isHubSchedule,
+    origin,
+    destination,
+    dateStr,
+    selectedClass,
+    passengerCount,
+    setSearchState,
+  ]);
 
   return (
     <div className="flex-grow container mx-auto px-4 md:px-6 py-10 space-y-8 min-h-[75vh]">
-
       {/* Header Back Button */}
       <div className="flex items-center gap-4">
         <Link href="/">
@@ -155,13 +180,17 @@ export function FlightResults({
                 {!isHubSchedule && (
                   <span className="flex items-center gap-1">
                     <RiPlaneLine className="h-3.5 w-3.5 transform rotate-45" />
-                    {origin.includes("(") ? origin.substring(origin.indexOf("(")) : origin}
+                    {origin.includes("(")
+                      ? origin.substring(origin.indexOf("("))
+                      : origin}
                   </span>
                 )}
                 <span className="text-zinc-300">|</span>
                 <span className="flex items-center gap-1">
                   <RiPlaneLine className="h-3.5 w-3.5 transform rotate-90" />
-                  {destination.includes("(") ? destination.substring(destination.indexOf("(")) : destination}
+                  {destination.includes("(")
+                    ? destination.substring(destination.indexOf("("))
+                    : destination}
                 </span>
                 {isHubSchedule ? (
                   <>
@@ -171,24 +200,27 @@ export function FlightResults({
                       Upcoming schedules
                     </span>
                   </>
-                ) : dateStr && (
-                  <>
-                    <span className="text-zinc-300">|</span>
-                    <span className="flex items-center gap-1">
-                      <RiCalendarLine className="h-3.5 w-3.5" />
-                      {new Date(dateStr).toLocaleDateString("en-US", {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </span>
-                  </>
+                ) : (
+                  dateStr && (
+                    <>
+                      <span className="text-zinc-300">|</span>
+                      <span className="flex items-center gap-1">
+                        <RiCalendarLine className="h-3.5 w-3.5" />
+                        {new Date(dateStr).toLocaleDateString("en-US", {
+                          weekday: "short",
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </>
+                  )
                 )}
                 <span className="text-zinc-300">|</span>
                 <span className="flex items-center gap-1">
                   <RiGroupLine className="h-3.5 w-3.5" />
-                  {passengerCount} {passengerCount === 1 ? "Passenger" : "Passengers"}
+                  {passengerCount}{" "}
+                  {passengerCount === 1 ? "Passenger" : "Passengers"}
                 </span>
               </div>
             </div>
@@ -218,14 +250,15 @@ export function FlightResults({
 
       {/* Main Grid Content */}
       <div className="grid grid-cols-1 gap-6">
-
         {!isHubSchedule && (!origin || !destination) ? (
           // Empty state: show search card directly
           <div className="space-y-12">
             <div className="max-w-md mx-auto text-center space-y-2 py-8">
               <RiPlaneLine className="h-10 w-10 text-primary mx-auto animate-bounce" />
               <h2 className="text-xl font-bold font-heading">Find a Flight</h2>
-              <p className="text-xs text-zinc-500">Configure origin and destination below to view seating.</p>
+              <p className="text-xs text-zinc-500">
+                Configure origin and destination below to view seating.
+              </p>
             </div>
             <div className="max-w-4xl mx-auto pt-16">
               <SearchPanel />
@@ -239,7 +272,9 @@ export function FlightResults({
                 <RiPlaneLine className="h-6 w-6 transform rotate-90" />
               </div>
               <div className="space-y-1.5 max-w-sm mx-auto">
-                <h3 className="text-lg font-bold font-heading">No Flights Scheduled</h3>
+                <h3 className="text-lg font-bold font-heading">
+                  No Flights Scheduled
+                </h3>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
                   {isHubSchedule
                     ? "We currently do not have upcoming arrivals scheduled for this hub."
@@ -248,7 +283,9 @@ export function FlightResults({
               </div>
               <div className="pt-6">
                 <Link href="/">
-                  <Button size="sm" className="font-semibold cursor-pointer">Modify Search</Button>
+                  <Button size="sm" className="font-semibold cursor-pointer">
+                    Modify Search
+                  </Button>
                 </Link>
               </div>
             </CardContent>
@@ -265,15 +302,22 @@ export function FlightResults({
                 {/* Aircraft Type Filter */}
                 {uniqueAircrafts.length > 1 && (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-500">Aircraft:</span>
-                    <Select value={selectedAircraft} onValueChange={setSelectedAircraft}>
+                    <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-500">
+                      Aircraft:
+                    </span>
+                    <Select
+                      value={selectedAircraft}
+                      onValueChange={setSelectedAircraft}
+                    >
                       <SelectTrigger className="w-[140px] h-8 text-xs border border-zinc-200/60 dark:border-zinc-800/60 bg-white/70 dark:bg-zinc-900/70 cursor-pointer rounded-lg px-2">
                         <SelectValue placeholder="All Aircrafts" />
                       </SelectTrigger>
                       <SelectContent className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg">
                         <SelectItem value="all">All Aircrafts</SelectItem>
-                        {uniqueAircrafts.map(ac => (
-                          <SelectItem key={ac} value={ac}>{ac}</SelectItem>
+                        {uniqueAircrafts.map((ac) => (
+                          <SelectItem key={ac} value={ac}>
+                            {ac}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -282,18 +326,32 @@ export function FlightResults({
 
                 {/* Sort Option */}
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-500">Sort By:</span>
+                  <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-500">
+                    Sort By:
+                  </span>
                   <Select value={sortBy} onValueChange={setSortBy}>
                     <SelectTrigger className="w-[180px] h-8 text-xs border border-zinc-200/60 dark:border-zinc-800/60 bg-white/70 dark:bg-zinc-900/70 cursor-pointer rounded-lg px-2">
                       <SelectValue placeholder="Sort by..." />
                     </SelectTrigger>
                     <SelectContent className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg">
-                      <SelectItem value="price-asc">Price: Low to High</SelectItem>
-                      <SelectItem value="price-desc">Price: High to Low</SelectItem>
-                      <SelectItem value="departs-asc">Departure: Earliest</SelectItem>
-                      <SelectItem value="departs-desc">Departure: Latest</SelectItem>
-                      <SelectItem value="arrives-asc">Arrival: Earliest</SelectItem>
-                      <SelectItem value="duration-asc">Duration: Shortest</SelectItem>
+                      <SelectItem value="price-asc">
+                        Price: Low to High
+                      </SelectItem>
+                      <SelectItem value="price-desc">
+                        Price: High to Low
+                      </SelectItem>
+                      <SelectItem value="departs-asc">
+                        Departure: Earliest
+                      </SelectItem>
+                      <SelectItem value="departs-desc">
+                        Departure: Latest
+                      </SelectItem>
+                      <SelectItem value="arrives-asc">
+                        Arrival: Earliest
+                      </SelectItem>
+                      <SelectItem value="duration-asc">
+                        Duration: Shortest
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -302,18 +360,26 @@ export function FlightResults({
 
             <div className="space-y-4">
               {sortedFlights.map((flight) => {
-                const displayOrigin = flight.origin || origin
-                const displayDestination = flight.destination || destination
-                const depDate = new Date(flight.departs_at)
-                const depTime = depDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+                const displayOrigin = flight.origin || origin;
+                const displayDestination = flight.destination || destination;
+                const depDate = new Date(flight.departs_at);
+                const depTime = depDate.toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                });
 
-                const arrDate = new Date(flight.arrives_at)
-                const arrTime = arrDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+                const arrDate = new Date(flight.arrives_at);
+                const arrTime = arrDate.toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                });
 
                 // Duration Calculation
-                const durationMs = arrDate.getTime() - depDate.getTime()
-                const hours = Math.floor(durationMs / (1000 * 60 * 60))
-                const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60))
+                const durationMs = arrDate.getTime() - depDate.getTime();
+                const hours = Math.floor(durationMs / (1000 * 60 * 60));
+                const minutes = Math.floor(
+                  (durationMs % (1000 * 60 * 60)) / (1000 * 60),
+                );
 
                 return (
                   <Card
@@ -321,13 +387,14 @@ export function FlightResults({
                     className="overflow-hidden border border-zinc-200/80 dark:border-zinc-800/80 shadow-md bg-white dark:bg-zinc-900 hover:shadow-xl transition-all duration-300"
                   >
                     <CardContent className="p-6 grid grid-cols-1 md:grid-cols-12 items-center gap-6">
-
                       {/* 1. Airline / Flight Number (3 Cols) */}
                       <div className="md:col-span-3 space-y-1">
                         <span className="inline-flex px-2.5 py-0.5 rounded-full bg-primary/10 text-xs font-bold text-primary">
                           {flight.flight_no}
                         </span>
-                        <h4 className="text-base font-bold text-zinc-800 dark:text-zinc-200">{flight.flight_no}</h4>
+                        <h4 className="text-base font-bold text-zinc-800 dark:text-zinc-200">
+                          {flight.flight_no}
+                        </h4>
                         <p className="text-xs text-zinc-400 dark:text-zinc-500 flex items-center gap-1.5">
                           <RiPlaneLine className="h-3.5 w-3.5" />
                           {flight.aircraft_type}
@@ -337,9 +404,15 @@ export function FlightResults({
                       {/* 2. Departure / Arrival (5 Cols) */}
                       <div className="md:col-span-5 flex items-center justify-between gap-4">
                         <div className="space-y-0.5">
-                          <p className="text-xs text-zinc-400 dark:text-zinc-500 font-semibold">DEPART</p>
-                          <p className="text-lg font-bold text-zinc-800 dark:text-zinc-200">{depTime}</p>
-                          <p className="text-xs text-zinc-500 font-medium">{displayOrigin.split(" ")[0]}</p>
+                          <p className="text-xs text-zinc-400 dark:text-zinc-500 font-semibold">
+                            DEPART
+                          </p>
+                          <p className="text-lg font-bold text-zinc-800 dark:text-zinc-200">
+                            {depTime}
+                          </p>
+                          <p className="text-xs text-zinc-500 font-medium">
+                            {displayOrigin.split(" ")[0]}
+                          </p>
                         </div>
 
                         <div className="flex flex-col items-center justify-center flex-1 px-4 text-center">
@@ -350,54 +423,63 @@ export function FlightResults({
                           <div className="relative w-full border-t border-dashed border-zinc-300 dark:border-zinc-700 my-1.5">
                             <RiPlaneLine className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400 transform rotate-90" />
                           </div>
-                          <span className="text-[9px] font-semibold uppercase tracking-wider text-green-500">Non-Stop</span>
+                          <span className="text-[9px] font-semibold uppercase tracking-wider text-green-500">
+                            Non-Stop
+                          </span>
                         </div>
 
                         <div className="space-y-0.5 text-right">
-                          <p className="text-xs text-zinc-400 dark:text-zinc-500 font-semibold">ARRIVE</p>
-                          <p className="text-lg font-bold text-zinc-800 dark:text-zinc-200">{arrTime}</p>
-                          <p className="text-xs text-zinc-500 font-medium">{displayDestination.split(" ")[0]}</p>
+                          <p className="text-xs text-zinc-400 dark:text-zinc-500 font-semibold">
+                            ARRIVE
+                          </p>
+                          <p className="text-lg font-bold text-zinc-800 dark:text-zinc-200">
+                            {arrTime}
+                          </p>
+                          <p className="text-xs text-zinc-500 font-medium">
+                            {displayDestination.split(" ")[0]}
+                          </p>
                         </div>
                       </div>
 
                       {/* 3. Pricing (2 Cols) */}
                       <div className="md:col-span-2 text-left md:text-right">
-                        <p className="text-[10px] text-zinc-400 font-semibold uppercase tracking-wider">Base Ticket Price</p>
+                        <p className="text-[10px] text-zinc-400 font-semibold uppercase tracking-wider">
+                          Base Ticket Price
+                        </p>
                         <p className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-50">
                           ₹{Number(flight.base_price).toLocaleString("en-IN")}
                         </p>
-                        <p className="text-[10px] text-zinc-500 font-medium">Class seats vary</p>
+                        <p className="text-[10px] text-zinc-500 font-medium">
+                          Class seats vary
+                        </p>
                       </div>
 
                       {/* 4. Action (2 Cols) */}
                       <div className="md:col-span-2 flex justify-end">
                         <Button
                           onClick={() => {
-                            setSelectedFlight(flight)
-                            setSelectedSeat(null)
-                            setBookingStep("seating")
+                            setSelectedFlight(flight);
+                            setSelectedSeat(null);
+                            setBookingStep("seating");
                           }}
                           className="w-full md:w-auto font-bold px-6 shadow-md shadow-primary/10 cursor-pointer"
                         >
                           Select Cabin
                         </Button>
                       </div>
-
                     </CardContent>
                   </Card>
-                )
+                );
               })}
             </div>
           </div>
         )}
-
       </div>
 
       {/* Visual Seat Selection Overlay Modal */}
       {activeFlight && (
         <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="w-full max-w-6xl bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-zinc-200 dark:border-zinc-800 animate-in zoom-in-95 duration-300">
-
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-900/50">
               <div className="space-y-0.5">
@@ -405,15 +487,16 @@ export function FlightResults({
                   Visual Seating Map &amp; Traveler Locks
                 </h3>
                 <p className="text-xs text-zinc-500">
-                  {activeFlight.flight_no} • {activeFlight.origin.split(" ")[0]} to {activeFlight.destination.split(" ")[0]}
+                  {activeFlight.flight_no} • {activeFlight.origin.split(" ")[0]}{" "}
+                  to {activeFlight.destination.split(" ")[0]}
                 </p>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  setSelectedFlight(null)
-                  setBookingStep("search")
+                  setSelectedFlight(null);
+                  setBookingStep("search");
                 }}
                 className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
               >
@@ -430,16 +513,14 @@ export function FlightResults({
                 origin={activeFlight.origin}
                 destination={activeFlight.destination}
                 onClose={() => {
-                  setSelectedFlight(null)
-                  setBookingStep("search")
+                  setSelectedFlight(null);
+                  setBookingStep("search");
                 }}
               />
             </div>
-
           </div>
         </div>
       )}
-
     </div>
-  )
+  );
 }
