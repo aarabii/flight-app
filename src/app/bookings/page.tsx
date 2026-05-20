@@ -382,7 +382,7 @@ export default function BookingsPage() {
             </div>
             <div className="space-y-1.5 max-w-sm mx-auto">
               <h3 className="text-lg font-bold font-heading">
-                you dont have booking
+                You don&apos;t have any bookings
               </h3>
               <p className="text-xs text-zinc-500 leading-relaxed">
                 Book now to create your first visual seat booking and flight

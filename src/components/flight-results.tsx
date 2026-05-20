@@ -25,7 +25,7 @@ import {
 
 import { useFlightStore } from "@/store/useFlightStore";
 import { useStoreHydration } from "@/store/useStoreHydration";
-import type { Flight } from "@/store/useFlightStore";
+import type { Flight, SeatClass } from "@/store/useFlightStore";
 
 interface FlightResultsProps {
   flights: Flight[];
@@ -125,7 +125,7 @@ export function FlightResults({
         origin,
         destination,
         date: dateStr,
-        class: selectedClass,
+        class: selectedClass as SeatClass,
         passengerCount,
       });
     }

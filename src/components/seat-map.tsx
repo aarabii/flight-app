@@ -327,7 +327,7 @@ export function SeatMap({ flightId, flightNo, basePrice, origin, destination, on
             id: data.booking_id,
             pnr_code: data.pnr_code,
             total_price: data.total_price,
-            status: "confirmed",
+            status: "confirmed" as const,
             created_at: new Date().toISOString(),
             flight: {
               id: flightId,
@@ -540,6 +540,24 @@ export function SeatMap({ flightId, flightNo, basePrice, origin, destination, on
             </div>
           ) : (
             <div className="w-full max-w-sm space-y-3">
+              {/* Column Headers */}
+              <div className="flex items-center justify-between gap-4 pb-2 border-b border-zinc-200/50 dark:border-zinc-800/50">
+                <span className="w-4" />
+                <div className="flex-grow flex justify-center gap-2">
+                  <div className="flex gap-2">
+                    {['A', 'B'].map((l) => (
+                      <span key={l} className="h-5 w-9 sm:w-10 flex items-center justify-center text-[10px] font-bold text-zinc-400">{l}</span>
+                    ))}
+                  </div>
+                  <div className="w-12 h-5" />
+                  <div className="flex gap-2">
+                    {['E', 'F'].map((l) => (
+                      <span key={l} className="h-5 w-9 sm:w-10 flex items-center justify-center text-[10px] font-bold text-zinc-400">{l}</span>
+                    ))}
+                  </div>
+                </div>
+                <span className="w-4" />
+              </div>
               {Object.keys(groupedRows).map((rowStr) => {
                 const rowNum = parseInt(rowStr)
                 const rowSeats = groupedRows[rowNum]
@@ -564,8 +582,9 @@ export function SeatMap({ flightId, flightNo, basePrice, origin, destination, on
                                   key={seat.id}
                                   onClick={() => handleSelectSeat(seat)}
                                   disabled={!seat.is_available}
-                                  className={getSeatButtonClasses(seat, isSelected, "h-9 w-9 text-[10px]")}
+                                  className={getSeatButtonClasses(seat, isSelected, "h-9 w-9 sm:h-10 sm:w-10 text-[10px]")}
                                   title={`${seat.seat_number} - ${seat.class} Class (₹${getSeatCost(seat)})`}
+                                  aria-label={`Seat ${seat.seat_number}, ${seat.class} class, ${!seat.is_available ? 'booked' : isSelected ? 'selected' : 'available'}, ₹${getSeatCost(seat)}`}
                                 >
                                   {parseSeatParts(seat.seat_number).letter}
                                   {!seat.is_available && <RiLockLine className="h-2 w-2 text-zinc-400 mt-0.5" />}
@@ -588,8 +607,9 @@ export function SeatMap({ flightId, flightNo, basePrice, origin, destination, on
                                   key={seat.id}
                                   onClick={() => handleSelectSeat(seat)}
                                   disabled={!seat.is_available}
-                                  className={getSeatButtonClasses(seat, isSelected, "h-9 w-9 text-[10px]")}
+                                  className={getSeatButtonClasses(seat, isSelected, "h-9 w-9 sm:h-10 sm:w-10 text-[10px]")}
                                   title={`${seat.seat_number} - ${seat.class} Class (₹${getSeatCost(seat)})`}
+                                  aria-label={`Seat ${seat.seat_number}, ${seat.class} class, ${!seat.is_available ? 'booked' : isSelected ? 'selected' : 'available'}, ₹${getSeatCost(seat)}`}
                                 >
                                   {parseSeatParts(seat.seat_number).letter}
                                   {!seat.is_available && <RiLockLine className="h-2 w-2 text-zinc-400 mt-0.5" />}
@@ -610,8 +630,9 @@ export function SeatMap({ flightId, flightNo, basePrice, origin, destination, on
                                   key={seat.id}
                                   onClick={() => handleSelectSeat(seat)}
                                   disabled={!seat.is_available}
-                                  className={getSeatButtonClasses(seat, isSelected, "h-8 w-8 text-[9px]")}
+                                  className={getSeatButtonClasses(seat, isSelected, "h-9 w-9 sm:h-10 sm:w-10 text-[9px] sm:text-[10px]")}
                                   title={`${seat.seat_number} - ${seat.class} Class (₹${getSeatCost(seat)})`}
+                                  aria-label={`Seat ${seat.seat_number}, ${seat.class} class, ${!seat.is_available ? 'booked' : isSelected ? 'selected' : 'available'}, ₹${getSeatCost(seat)}`}
                                 >
                                   {parseSeatParts(seat.seat_number).letter}
                                   {!seat.is_available && <RiLockLine className="h-2 w-2 text-zinc-400 mt-0.5" />}
@@ -632,8 +653,9 @@ export function SeatMap({ flightId, flightNo, basePrice, origin, destination, on
                                   key={seat.id}
                                   onClick={() => handleSelectSeat(seat)}
                                   disabled={!seat.is_available}
-                                  className={getSeatButtonClasses(seat, isSelected, "h-8 w-8 text-[9px]")}
+                                  className={getSeatButtonClasses(seat, isSelected, "h-9 w-9 sm:h-10 sm:w-10 text-[9px] sm:text-[10px]")}
                                   title={`${seat.seat_number} - ${seat.class} Class (₹${getSeatCost(seat)})`}
+                                  aria-label={`Seat ${seat.seat_number}, ${seat.class} class, ${!seat.is_available ? 'booked' : isSelected ? 'selected' : 'available'}, ₹${getSeatCost(seat)}`}
                                 >
                                   {parseSeatParts(seat.seat_number).letter}
                                   {!seat.is_available && <RiLockLine className="h-2 w-2 text-zinc-400 mt-0.5" />}

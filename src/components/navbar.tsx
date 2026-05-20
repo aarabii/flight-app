@@ -13,12 +13,6 @@ import { useUserStore } from "@/store/useUserStore"
 import { useFlightStore } from "@/store/useFlightStore"
 import { useStoreHydration } from "@/store/useStoreHydration"
 
-export interface NavbarProps {
-  initialUser?: {
-    email?: string
-    full_name?: string
-  } | null
-}
 
 export function Navbar() {
   const router = useRouter()
@@ -153,6 +147,7 @@ export function Navbar() {
             size="icon"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="text-zinc-600 dark:text-zinc-400"
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
           >
             {mobileMenuOpen ? <RiCloseLine className="h-6 w-6" /> : <RiMenuLine className="h-6 w-6" />}
           </Button>

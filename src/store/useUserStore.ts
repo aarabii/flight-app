@@ -35,7 +35,7 @@ export interface CachedBooking {
   id: string
   pnr_code: string
   total_price: number
-  status: string
+  status: 'confirmed' | 'cancelled' | 'rescheduled'
   booked_at?: string
   created_at?: string
   flight_id?: string
@@ -82,7 +82,7 @@ export interface UserStoreActions {
       | ((previousBookings: CachedBooking[]) => CachedBooking[])
   ) => void
   addCachedBooking: (booking: CachedBooking) => void
-  updateCachedBookingStatus: (bookingId: string, status: string) => void
+  updateCachedBookingStatus: (bookingId: string, status: CachedBooking['status']) => void
   clearSession: () => void
 }
 
@@ -118,33 +118,31 @@ export const useUserStore = create<UserStoreState & UserStoreActions>()(
     }),
     {
       name: "flygo-user-storage",
-      partialize: (state) => {
-        // Strip out any passport information from traveler itinerary cache
-        return {
-          ...state,
-          cachedBookings: state.cachedBookings.map((booking) => {
-            if (!booking) return booking
-            const cleanedBooking = { ...booking }
+      partialize: (state) => ({
+        // Only persist state fields — never spread ...state (which includes actions)
+        user: state.user,
+        cachedBookings: state.cachedBookings.map((booking) => {
+          if (!booking) return booking
+          const cleanedBooking = { ...booking }
 
-            if (cleanedBooking.passenger) {
+          if (cleanedBooking.passenger) {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { passport_no, passportNo, ...pRest } = cleanedBooking.passenger
+            cleanedBooking.passenger = pRest
+          }
+
+          if (Array.isArray(cleanedBooking.passengers)) {
+            cleanedBooking.passengers = cleanedBooking.passengers.map((p) => {
+              if (!p) return p
               // eslint-disable-next-line @typescript-eslint/no-unused-vars
-              const { passport_no, passportNo, ...pRest } = cleanedBooking.passenger
-              cleanedBooking.passenger = pRest
-            }
+              const { passport_no, ...passengerRest } = p
+              return passengerRest
+            })
+          }
 
-            if (Array.isArray(cleanedBooking.passengers)) {
-              cleanedBooking.passengers = cleanedBooking.passengers.map((p) => {
-                if (!p) return p
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                const { passport_no, ...passengerRest } = p
-                return passengerRest
-              })
-            }
-
-            return cleanedBooking
-          }),
-        }
-      },
+          return cleanedBooking
+        }),
+      }),
     }
   )
 )

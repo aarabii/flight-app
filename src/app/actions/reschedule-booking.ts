@@ -3,60 +3,46 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 
+interface RescheduleResult {
+  booking_id: string;
+  old_flight_id: string;
+  new_flight_id: string;
+  new_seat_number: string;
+  new_total_price: number;
+  fee_charged: number;
+  new_departs_at: string;
+}
+
 export async function rescheduleBooking(
   bookingId: string,
   newFlightId: string,
-  oldFlightId: string,
-): Promise<{ success?: boolean; feeCharged?: number; error?: string }> {
+  _oldFlightId: string,
+): Promise<{
+  success?: boolean;
+  feeCharged?: number;
+  newSeatNumber?: string;
+  error?: string;
+}> {
   const supabase = await createClient();
 
-  const { data: flights, error: flightsError } = await supabase
-    .from("flights")
-    .select("id, base_price")
-    .in("id", [oldFlightId, newFlightId]);
-
-  if (flightsError) {
-    return { error: flightsError.message };
-  }
-
-  const oldFlight = flights?.find((flight) => flight.id === oldFlightId);
-  const newFlight = flights?.find((flight) => flight.id === newFlightId);
-
-  if (!oldFlight || !newFlight) {
-    return { error: "Unable to load flight pricing for reschedule." };
-  }
-
-  const feeCharged = Math.max(
-    0,
-    Number(newFlight.base_price) - Number(oldFlight.base_price),
-  );
-
-  const { error: rescheduleError } = await supabase.from("reschedules").insert({
-    booking_id: bookingId,
-    old_flight_id: oldFlightId,
-    new_flight_id: newFlightId,
-    fee_charged: feeCharged,
+  const { data, error } = await supabase.rpc("reschedule_booking", {
+    p_booking_id: bookingId,
+    p_new_flight_id: newFlightId,
   });
 
-  if (rescheduleError) {
-    return { error: rescheduleError.message };
+  if (error) {
+    if (error.message.includes("2 hours")) {
+      return { error: "Cannot reschedule to a flight departing within 2 hours." };
+    }
+    return { error: error.message };
   }
 
-  const { error: bookingError } = await supabase
-    .from("bookings")
-    .update({
-      flight_id: newFlightId,
-      status: "rescheduled",
-    })
-    .eq("id", bookingId)
-    .eq("flight_id", oldFlightId)
-    .select("id")
-    .single();
-
-  if (bookingError) {
-    return { error: bookingError.message };
-  }
+  const result = data as RescheduleResult;
 
   revalidatePath("/bookings");
-  return { success: true, feeCharged };
+  return {
+    success: true,
+    feeCharged: result.fee_charged,
+    newSeatNumber: result.new_seat_number,
+  };
 }

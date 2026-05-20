@@ -50,13 +50,21 @@ export interface BookSeatsParams {
   bookings: PassengerSeatBooking[]
 }
 
+interface BookSeatResult {
+  booking_id: string
+  pnr_code: string
+  total_price: number
+  status: string
+  passenger_id: string
+}
+
 export async function bookSeats({
   flightId,
   bookings,
-}: BookSeatsParams): Promise<{ data?: any[]; error?: string }> {
+}: BookSeatsParams): Promise<{ data?: BookSeatResult[]; error?: string }> {
   const supabase = await createClient()
   const successfulBookings: string[] = []
-  const results: any[] = []
+  const results: BookSeatResult[] = []
 
   try {
     for (const booking of bookings) {
@@ -73,20 +81,21 @@ export async function bookSeats({
         throw new Error(error.message)
       }
 
-      if (data && (data as any).booking_id) {
-        successfulBookings.push((data as any).booking_id)
-        results.push(data)
+      if (data && (data as BookSeatResult).booking_id) {
+        successfulBookings.push((data as BookSeatResult).booking_id)
+        results.push(data as BookSeatResult)
       } else {
         throw new Error("Failed to book seat.")
       }
     }
 
     return { data: results }
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Rollback: cancel all successful bookings
     for (const bookingId of successfulBookings) {
       await supabase.rpc('cancel_booking', { p_booking_id: bookingId })
     }
-    return { error: err.message || "An error occurred during booking." }
+    const message = err instanceof Error ? err.message : "An error occurred during booking."
+    return { error: message }
   }
 }

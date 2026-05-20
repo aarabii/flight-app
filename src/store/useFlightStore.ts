@@ -24,11 +24,13 @@ export interface Seat {
   extra_fee: number
 }
 
+export type SeatClass = 'economy' | 'business' | 'first'
+
 export interface SearchState {
   origin: string
   destination: string
   date: string
-  class: string
+  class: SeatClass
   passengerCount: number
 }
 
@@ -63,6 +65,7 @@ export interface FlightStoreActions {
   updatePassengerForm: (form: Partial<PassengerForm>) => void
   setPassengerForms: (forms: PassengerForm[]) => void
   resetBookingFlow: () => void
+  resetAll: () => void
 }
 
 const emptyPassenger = (): PassengerForm => ({
@@ -125,6 +128,23 @@ export const useFlightStore = create<FlightStoreState & FlightStoreActions>()(
           ),
           bookingStep: "seating",
         })),
+
+      resetAll: () =>
+        set({
+          searchState: {
+            origin: "",
+            destination: "",
+            date: "",
+            class: "economy",
+            passengerCount: 1,
+          },
+          selectedFlight: null,
+          selectedSeat: null,
+          selectedSeats: [],
+          bookingStep: "search",
+          passengerForm: emptyPassenger(),
+          passengerForms: [emptyPassenger()],
+        }),
     }),
     {
       name: "flygo-flight-storage",
@@ -137,8 +157,7 @@ export const useFlightStore = create<FlightStoreState & FlightStoreActions>()(
         // Strip passportNo from all passenger form entries before persisting
         passengerForm: { ...state.passengerForm, passportNo: "" },
         passengerForms: state.passengerForms.map(
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          ({ passportNo, ...rest }) => rest as PassengerForm
+          (p) => ({ ...p, passportNo: "" })
         ),
       }),
     }

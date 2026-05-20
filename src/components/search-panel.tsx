@@ -37,6 +37,7 @@ const CLASSES = [
 ]
 
 import { useFlightStore } from "@/store/useFlightStore"
+import type { SeatClass } from "@/store/useFlightStore"
 
 interface SearchPanelProps {
   className?: string
@@ -94,7 +95,7 @@ export function SearchPanel({ className }: SearchPanelProps = {}) {
       origin,
       destination,
       date: formattedDate,
-      class: travelerClass,
+      class: travelerClass as SeatClass,
       passengerCount,
     })
 
