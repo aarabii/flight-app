@@ -31,9 +31,11 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
   const selectedSeat = storeSelectedSeat !== undefined ? storeSelectedSeat : null
   const setSelectedSeat = useFlightStore((state) => state.setSelectedSeat)
 
-  const storePassengerForm = useStoreHydration(useFlightStore, (state) => state.passengerForm)
-  const passengerForm = storePassengerForm !== undefined ? storePassengerForm : { fullName: "", passportNo: "", nationality: "", dob: "" }
-  const updatePassengerForm = useFlightStore((state) => state.updatePassengerForm)
+  const storePassengerForms = useStoreHydration(useFlightStore, (state) => state.passengerForms)
+  const setPassengerForms = useFlightStore((state) => state.setPassengerForms)
+
+  const storePassengerCount = useStoreHydration(useFlightStore, (state) => state.searchState.passengerCount)
+  const passengerCount = (storePassengerCount !== undefined ? storePassengerCount : 1) || 1
 
   const storeUser = useStoreHydration(useUserStore, (state) => state.user)
   const user = storeUser !== undefined ? storeUser : null
@@ -42,50 +44,67 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
   const setBookingStep = useFlightStore((state) => state.setBookingStep)
   const resetBookingFlow = useFlightStore((state) => state.resetBookingFlow)
 
-  // Local state for passenger verification inputs synced to store
-  const [fullName, setFullNameState] = React.useState("")
-  const [passportNo, setPassportNoState] = React.useState("")
-  const [nationality, setNationalityState] = React.useState("")
-  const [dob, setDobState] = React.useState("")
+  // Local array state — one entry per passenger
+  const [passengers, setPassengers] = React.useState<
+    { fullName: string; passportNo: string; nationality: string; dob: string }[]
+  >(() =>
+    Array.from({ length: passengerCount }, () => ({
+      fullName: "",
+      passportNo: "",
+      nationality: "",
+      dob: "",
+    }))
+  )
 
-  // Submission & screen states
-  const [isSubmitting, setIsSubmitting] = React.useState(false)
-  const [bookingSuccess, setBookingSuccess] = React.useState<any>(null)
-  const [submitError, setSubmitError] = React.useState<string | null>(null)
-  const [formErrors, setFormErrors] = React.useState<{ [key: string]: string }>({})
-
-  // Initialize form fields once store is hydrated
+  // Resize the passengers array whenever passengerCount changes
   React.useEffect(() => {
-    if (passengerForm.fullName) setFullNameState(passengerForm.fullName)
-    if (passengerForm.passportNo) setPassportNoState(passengerForm.passportNo)
-    if (passengerForm.nationality) setNationalityState(passengerForm.nationality)
-    if (passengerForm.dob) setDobState(passengerForm.dob)
-  }, [passengerForm])
+    setPassengers((prev) =>
+      Array.from({ length: passengerCount }, (_, i) => prev[i] ?? { fullName: "", passportNo: "", nationality: "", dob: "" })
+    )
+  }, [passengerCount])
 
-  // Sync utilities to push inputs to the Zustand store
-  const setFullName = (val: string) => {
-    setFullNameState(val)
-    updatePassengerForm({ fullName: val })
-  }
-  const setPassportNo = (val: string) => {
-    setPassportNoState(val)
-    updatePassengerForm({ passportNo: val })
-  }
-  const setNationality = (val: string) => {
-    setNationalityState(val)
-    updatePassengerForm({ nationality: val })
-  }
-  const setDob = (val: string) => {
-    setDobState(val)
-    updatePassengerForm({ dob: val })
-  }
-
-  // Pre-fill profile name if auth user profile name exists and form is empty
+  // Pre-fill passenger 0 fullName from user profile if still empty
   React.useEffect(() => {
-    if (user && !fullName) {
-      setFullName(user.full_name || "")
+    if (user && !passengers[0]?.fullName) {
+      setPassengers((prev) => {
+        const updated = [...prev]
+        if (updated[0]) updated[0] = { ...updated[0], fullName: user.full_name || "" }
+        return updated
+      })
     }
-  }, [user, fullName])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
+
+  // Seed local state from persisted store once hydrated
+  React.useEffect(() => {
+    if (storePassengerForms && storePassengerForms.length > 0) {
+      setPassengers((prev) =>
+        Array.from({ length: passengerCount }, (_, i) => ({
+          fullName: storePassengerForms[i]?.fullName || prev[i]?.fullName || "",
+          passportNo: prev[i]?.passportNo || "",          // passportNo is never persisted
+          nationality: storePassengerForms[i]?.nationality || prev[i]?.nationality || "",
+          dob: storePassengerForms[i]?.dob || prev[i]?.dob || "",
+        }))
+      )
+    }
+  // Only run once on hydration
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storePassengerForms])
+
+  // Helper: update a single field for passenger at index
+  const updatePassenger = (
+    index: number,
+    field: "fullName" | "passportNo" | "nationality" | "dob",
+    value: string
+  ) => {
+    setPassengers((prev) => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], [field]: value }
+      // Sync to store (strips passportNo via partialize)
+      setPassengerForms(updated)
+      return updated
+    })
+  }
 
   // Fetch seat map on flightId changes
   React.useEffect(() => {
@@ -180,14 +199,24 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
     }
   }
 
-  // Validate form details
+  // Submission & screen states
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [bookingSuccess, setBookingSuccess] = React.useState<
+    { booking_id: string; pnr_code: string; total_price: number; departs_at?: string } | null
+  >(null)
+  const [submitError, setSubmitError] = React.useState<string | null>(null)
+  const [formErrors, setFormErrors] = React.useState<{ [key: string]: string }>({})
+
+  // Validate all passenger forms
   const validateForm = () => {
     const errs: { [key: string]: string } = {}
-    if (!fullName.trim()) errs.fullName = "Passenger name is required."
-    if (!passportNo.trim()) errs.passportNo = "Passport number is required."
-    if (!nationality.trim()) errs.nationality = "Nationality is required."
-    if (!dob) errs.dob = "Date of birth is required."
-    
+    passengers.forEach((p, i) => {
+      const prefix = passengerCount > 1 ? `p${i + 1}_` : ""
+      if (!p.fullName.trim()) errs[`${prefix}fullName`] = `Passenger ${i + 1}: name is required.`
+      if (!p.passportNo.trim()) errs[`${prefix}passportNo`] = `Passenger ${i + 1}: passport number is required.`
+      if (!p.nationality.trim()) errs[`${prefix}nationality`] = `Passenger ${i + 1}: nationality is required.`
+      if (!p.dob) errs[`${prefix}dob`] = `Passenger ${i + 1}: date of birth is required.`
+    })
     setFormErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -203,13 +232,15 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
     setSubmitError(null)
 
     try {
+      // Always book the primary passenger (index 0) — multi-seat booking is out of scope
+      const primary = passengers[0]
       const result = await bookSeat({
         flightId,
         seatId: selectedSeat.id,
-        fullName,
-        passportNo,
-        nationality,
-        dob,
+        fullName: primary.fullName,
+        passportNo: primary.passportNo,
+        nationality: primary.nationality,
+        dob: primary.dob,
       })
 
       if (result.error) {
@@ -241,9 +272,9 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
             departs_at: data.departs_at || new Date().toISOString(),
           },
           passenger: {
-            full_name: fullName,
-            nationality: nationality,
-            dob: dob,
+            full_name: passengers[0].fullName,
+            nationality: passengers[0].nationality,
+            dob: passengers[0].dob,
           },
           seat: {
             seat_number: selectedSeat.seat_number,
@@ -291,7 +322,7 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
           <div className="p-6 text-left grid grid-cols-2 gap-4 border-b border-dashed border-zinc-200 dark:border-zinc-800">
             <div>
               <p className="text-[10px] text-zinc-400 font-semibold uppercase">Passenger</p>
-              <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200">{fullName}</p>
+              <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200">{passengers[0]?.fullName}</p>
             </div>
             <div>
               <p className="text-[10px] text-zinc-400 font-semibold uppercase">PNR Code</p>
@@ -580,24 +611,24 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
           )}
 
           {/* Auth Gate and Form */}
-          {!user ? (
-            <div className="p-6 rounded-xl border border-destructive/20 bg-destructive/5 space-y-4 text-center">
-              <RiAlertFill className="h-6 w-6 text-destructive mx-auto animate-bounce" />
-              <div className="space-y-1">
-                <h5 className="text-sm font-bold text-destructive">Authentication Required</h5>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  You must be signed in to purchase tickets and register passenger PNR claims.
-                </p>
+          {selectedSeat && (
+            !user ? (
+              <div className="p-6 rounded-xl border border-destructive/20 bg-destructive/5 space-y-4 text-center">
+                <RiAlertFill className="h-6 w-6 text-destructive mx-auto animate-bounce" />
+                <div className="space-y-1">
+                  <h5 className="text-sm font-bold text-destructive">Authentication Required</h5>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    You must be signed in to purchase tickets and register passenger PNR claims.
+                  </p>
+                </div>
+                <Link href={`/auth/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`}>
+                  <Button size="sm" className="w-full font-semibold mt-2 cursor-pointer">
+                    Sign In to Continue
+                  </Button>
+                </Link>
               </div>
-              <Link href={`/auth/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`}>
-                <Button size="sm" className="w-full font-semibold mt-2 cursor-pointer">
-                  Sign In to Continue
-                </Button>
-              </Link>
-            </div>
-          ) : (
-            selectedSeat && (
-              <form onSubmit={handleConfirmBooking} className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            ) : (
+              <form onSubmit={handleConfirmBooking} className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 {submitError && (
                   <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-xs text-destructive border border-destructive/20">
                     <RiAlertFill className="h-4 w-4 shrink-0" />
@@ -605,65 +636,95 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
                   </div>
                 )}
 
-                {/* Name */}
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-zinc-500 flex items-center gap-1">
-                    <RiUserLine className="h-3.5 w-3.5" /> Full Name
-                  </label>
-                  <Input
-                    placeholder="Passenger full name (matches passport)"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    disabled={isSubmitting}
-                    className="h-10"
-                  />
-                  {formErrors.fullName && <p className="text-xs text-destructive font-medium">{formErrors.fullName}</p>}
-                </div>
+                {/* One form section per passenger */}
+                {passengers.map((passenger, index) => (
+                  <div key={index} className="space-y-4">
+                    {passengerCount > 1 && (
+                      <div className="flex items-center gap-2 pb-1 border-b border-zinc-100 dark:border-zinc-800">
+                        <RiUserLine className="h-4 w-4 text-primary" />
+                        <h5 className="text-sm font-bold text-zinc-700 dark:text-zinc-300">
+                          Passenger {index + 1}{index === 0 ? " (Primary)" : ""}
+                        </h5>
+                      </div>
+                    )}
 
-                {/* Passport */}
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-zinc-500 flex items-center gap-1">
-                    <RiPassportLine className="h-3.5 w-3.5" /> Passport Number
-                  </label>
-                  <Input
-                    placeholder="Z1234567"
-                    value={passportNo}
-                    onChange={(e) => setPassportNo(e.target.value)}
-                    disabled={isSubmitting}
-                    className="h-10 text-xs font-mono uppercase"
-                  />
-                  {formErrors.passportNo && <p className="text-xs text-destructive font-medium">{formErrors.passportNo}</p>}
-                </div>
+                    {/* Name */}
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-zinc-500 flex items-center gap-1">
+                        <RiUserLine className="h-3.5 w-3.5" /> Full Name
+                      </label>
+                      <Input
+                        placeholder="Passenger full name (matches passport)"
+                        value={passenger.fullName}
+                        onChange={(e) => updatePassenger(index, "fullName", e.target.value)}
+                        disabled={isSubmitting}
+                        className="h-10"
+                      />
+                      {formErrors[`${passengerCount > 1 ? `p${index + 1}_` : ""}fullName`] && (
+                        <p className="text-xs text-destructive font-medium">
+                          {formErrors[`${passengerCount > 1 ? `p${index + 1}_` : ""}fullName`]}
+                        </p>
+                      )}
+                    </div>
 
-                {/* Nationality */}
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-zinc-500 flex items-center gap-1">
-                    <RiFlagLine className="h-3.5 w-3.5" /> Nationality
-                  </label>
-                  <Input
-                    placeholder="Indian"
-                    value={nationality}
-                    onChange={(e) => setNationality(e.target.value)}
-                    disabled={isSubmitting}
-                    className="h-10"
-                  />
-                  {formErrors.nationality && <p className="text-xs text-destructive font-medium">{formErrors.nationality}</p>}
-                </div>
+                    {/* Passport */}
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-zinc-500 flex items-center gap-1">
+                        <RiPassportLine className="h-3.5 w-3.5" /> Passport Number
+                      </label>
+                      <Input
+                        placeholder="Z1234567"
+                        value={passenger.passportNo}
+                        onChange={(e) => updatePassenger(index, "passportNo", e.target.value)}
+                        disabled={isSubmitting}
+                        className="h-10 text-xs font-mono uppercase"
+                      />
+                      {formErrors[`${passengerCount > 1 ? `p${index + 1}_` : ""}passportNo`] && (
+                        <p className="text-xs text-destructive font-medium">
+                          {formErrors[`${passengerCount > 1 ? `p${index + 1}_` : ""}passportNo`]}
+                        </p>
+                      )}
+                    </div>
 
-                {/* Date of Birth */}
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-zinc-500 flex items-center gap-1">
-                    <RiCalendarLine className="h-3.5 w-3.5" /> Date of Birth
-                  </label>
-                  <Input
-                    type="date"
-                    value={dob}
-                    onChange={(e) => setDob(e.target.value)}
-                    disabled={isSubmitting}
-                    className="h-10 text-xs cursor-pointer"
-                  />
-                  {formErrors.dob && <p className="text-xs text-destructive font-medium">{formErrors.dob}</p>}
-                </div>
+                    {/* Nationality */}
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-zinc-500 flex items-center gap-1">
+                        <RiFlagLine className="h-3.5 w-3.5" /> Nationality
+                      </label>
+                      <Input
+                        placeholder="Indian"
+                        value={passenger.nationality}
+                        onChange={(e) => updatePassenger(index, "nationality", e.target.value)}
+                        disabled={isSubmitting}
+                        className="h-10"
+                      />
+                      {formErrors[`${passengerCount > 1 ? `p${index + 1}_` : ""}nationality`] && (
+                        <p className="text-xs text-destructive font-medium">
+                          {formErrors[`${passengerCount > 1 ? `p${index + 1}_` : ""}nationality`]}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Date of Birth */}
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-zinc-500 flex items-center gap-1">
+                        <RiCalendarLine className="h-3.5 w-3.5" /> Date of Birth
+                      </label>
+                      <Input
+                        type="date"
+                        value={passenger.dob}
+                        onChange={(e) => updatePassenger(index, "dob", e.target.value)}
+                        disabled={isSubmitting}
+                        className="h-10 text-xs cursor-pointer"
+                      />
+                      {formErrors[`${passengerCount > 1 ? `p${index + 1}_` : ""}dob`] && (
+                        <p className="text-xs text-destructive font-medium">
+                          {formErrors[`${passengerCount > 1 ? `p${index + 1}_` : ""}dob`]}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
 
                 <Button
                   type="submit"
@@ -673,7 +734,7 @@ export function SeatMap({ flightId, flightNo, airline, basePrice, origin, destin
                   {isSubmitting ? (
                     <span className="flex items-center gap-2 justify-center">
                       <RiLoader4Line className="h-5 w-5 animate-spin" />
-                      Locking Seat & Booking...
+                      Locking Seat &amp; Booking...
                     </span>
                   ) : (
                     `Purchase Ticket - ₹${Number(getSeatCost(selectedSeat)).toLocaleString("en-IN")}`

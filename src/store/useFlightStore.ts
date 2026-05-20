@@ -30,6 +30,7 @@ export interface SearchState {
   destination: string
   date: string
   class: string
+  passengerCount: number
 }
 
 export interface PassengerForm {
@@ -46,7 +47,11 @@ export interface FlightStoreState {
   selectedFlight: Flight | null
   selectedSeat: Seat | null
   bookingStep: BookingStep
+  /** Legacy single-passenger field — kept so existing code that reads
+   *  passengerForm does not break. Superseded by passengerForms. */
   passengerForm: PassengerForm
+  /** One entry per passenger (length === searchState.passengerCount) */
+  passengerForms: PassengerForm[]
 }
 
 export interface FlightStoreActions {
@@ -55,8 +60,16 @@ export interface FlightStoreActions {
   setSelectedSeat: (seat: Seat | null) => void
   setBookingStep: (step: BookingStep) => void
   updatePassengerForm: (form: Partial<PassengerForm>) => void
+  setPassengerForms: (forms: PassengerForm[]) => void
   resetBookingFlow: () => void
 }
+
+const emptyPassenger = (): PassengerForm => ({
+  fullName: "",
+  passportNo: "",
+  nationality: "",
+  dob: "",
+})
 
 export const useFlightStore = create<FlightStoreState & FlightStoreActions>()(
   persist(
@@ -66,16 +79,13 @@ export const useFlightStore = create<FlightStoreState & FlightStoreActions>()(
         destination: "",
         date: "",
         class: "economy",
+        passengerCount: 1,
       },
       selectedFlight: null,
       selectedSeat: null,
       bookingStep: "search",
-      passengerForm: {
-        fullName: "",
-        passportNo: "",
-        nationality: "",
-        dob: "",
-      },
+      passengerForm: emptyPassenger(),
+      passengerForms: [emptyPassenger()],
 
       setSearchState: (search) =>
         set((state) => ({
@@ -91,31 +101,33 @@ export const useFlightStore = create<FlightStoreState & FlightStoreActions>()(
           passengerForm: { ...state.passengerForm, ...form },
         })),
 
+      setPassengerForms: (forms) => set({ passengerForms: forms }),
+
       resetBookingFlow: () =>
-        set({
+        set((state) => ({
           selectedSeat: null,
-          passengerForm: {
-            fullName: "",
-            passportNo: "",
-            nationality: "",
-            dob: "",
-          },
+          passengerForm: emptyPassenger(),
+          passengerForms: Array.from(
+            { length: state.searchState.passengerCount },
+            emptyPassenger
+          ),
           bookingStep: "seating",
-        }),
+        })),
     }),
     {
       name: "aerolux-flight-storage",
-      partialize: (state) => {
-        // Exclude passenger passport number from persisting
-        const { passengerForm, ...rest } = state
-        return {
-          ...rest,
-          passengerForm: {
-            ...passengerForm,
-            passportNo: "",
-          },
-        }
-      },
+      partialize: (state) => ({
+        searchState: state.searchState,
+        selectedFlight: state.selectedFlight,
+        selectedSeat: state.selectedSeat,
+        bookingStep: state.bookingStep,
+        // Strip passportNo from all passenger form entries before persisting
+        passengerForm: { ...state.passengerForm, passportNo: "" },
+        passengerForms: state.passengerForms.map(
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          ({ passportNo, ...rest }) => rest as PassengerForm
+        ),
+      }),
     }
   )
 )

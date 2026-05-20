@@ -6,7 +6,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { RiPlaneLine, RiCalendarLine, RiUserAddLine, RiSearchLine } from "@remixicon/react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { RiPlaneLine, RiCalendarLine, RiUserAddLine, RiSearchLine, RiGroupLine } from "@remixicon/react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 
@@ -40,6 +47,7 @@ export function SearchPanel() {
   const [destination, setDestination] = React.useState("")
   const [date, setDate] = React.useState<Date | undefined>(undefined)
   const [travelerClass, setTravelerClass] = React.useState("economy")
+  const [passengerCount, setPassengerCount] = React.useState(1)
   const [errors, setErrors] = React.useState<{ [key: string]: string }>({})
 
   // Initialize local states from store once hydrated
@@ -56,6 +64,7 @@ export function SearchPanel() {
       setDate(new Date(Date.now() + 24 * 60 * 60 * 1000)) // Default tomorrow
     }
     if (searchState.class) setTravelerClass(searchState.class)
+    if (searchState.passengerCount) setPassengerCount(searchState.passengerCount)
   }, [searchState])
 
   const handleSearch = (e: React.FormEvent) => {
@@ -82,16 +91,18 @@ export function SearchPanel() {
       destination,
       date: formattedDate,
       class: travelerClass,
+      passengerCount,
     })
 
     setErrors({})
     
-    // Redirect to search results page
+    // Redirect to search results page — include passengers count in URL
     const queryParams = new URLSearchParams({
       origin,
       destination,
       date: formattedDate,
       class: travelerClass,
+      passengers: String(passengerCount),
     })
     
     router.push(`/search?${queryParams.toString()}`)
@@ -102,7 +113,7 @@ export function SearchPanel() {
       <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-primary via-purple-500 to-indigo-600" />
       <CardContent className="p-6">
         <form onSubmit={handleSearch} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             
             {/* Origin Selection */}
             <div className="space-y-1.5 flex-1">
@@ -209,6 +220,29 @@ export function SearchPanel() {
                   ▼
                 </div>
               </div>
+            </div>
+
+            {/* Passenger Count */}
+            <div className="space-y-1.5 flex-1">
+              <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+                <RiGroupLine className="h-3.5 w-3.5 text-primary" />
+                Passengers
+              </label>
+              <Select
+                value={String(passengerCount)}
+                onValueChange={(val) => setPassengerCount(parseInt(val))}
+              >
+                <SelectTrigger className="w-full h-11 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-sm font-medium text-zinc-800 dark:text-zinc-200 cursor-pointer">
+                  <SelectValue placeholder="Passengers" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[1, 2, 3, 4, 5, 6].map((n) => (
+                    <SelectItem key={n} value={String(n)}>
+                      {n} {n === 1 ? "Passenger" : "Passengers"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
           </div>
