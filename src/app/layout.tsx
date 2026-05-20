@@ -19,7 +19,7 @@ export default function RootLayout({
     <html lang="en" className={cn("h-full", "antialiased", "font-sans")}>
       <body className="min-h-full flex flex-col bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50">
         <Navbar />
-        <main className="flex-grow flex flex-col">{children}</main>
+        <main className="grow flex flex-col">{children}</main>
         <footer className="border-t border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-950 py-6 text-center text-sm text-zinc-500">
           <div className="container mx-auto px-4">
             <p>
