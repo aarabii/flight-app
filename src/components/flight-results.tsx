@@ -23,7 +23,9 @@ import {
   RiGroupLine,
 } from "@remixicon/react";
 
+import { useRouter } from "next/navigation";
 import { useFlightStore } from "@/store/useFlightStore";
+import { useUserStore } from "@/store/useUserStore";
 import { useStoreHydration } from "@/store/useStoreHydration";
 import type { Flight, SeatClass } from "@/store/useFlightStore";
 
@@ -45,6 +47,11 @@ export function FlightResults({
   isHubSchedule = false,
   searchParams: { origin, destination, date: dateStr, selectedClass },
 }: FlightResultsProps) {
+  const router = useRouter();
+  
+  // Zustand user authentication state
+  const user = useStoreHydration(useUserStore, (state) => state.user);
+
   // Zustand state for selected flight (seat map modal trigger)
   const storeSelectedFlight = useStoreHydration(
     useFlightStore,
@@ -469,6 +476,29 @@ export function FlightResults({
                       <div className="md:col-span-2 flex justify-end">
                         <Button
                           onClick={() => {
+                            // Direct check from localStorage to avoid any race condition before store hydration finishes
+                            let isLoggedOut = false;
+                            if (typeof window !== "undefined") {
+                              const stored = localStorage.getItem("flygo-user-storage");
+                              if (stored) {
+                                try {
+                                  const parsed = JSON.parse(stored);
+                                  if (!parsed.state?.user) {
+                                    isLoggedOut = true;
+                                  }
+                                } catch (e) {
+                                  isLoggedOut = true;
+                                }
+                              } else {
+                                isLoggedOut = true;
+                              }
+                            }
+                            
+                            if (isLoggedOut || !user) {
+                              const targetUrl = window.location.pathname + window.location.search;
+                              router.push(`/auth/login?next=${encodeURIComponent(targetUrl)}`);
+                              return;
+                            }
                             setSelectedFlight(flight);
                             setSelectedSeat(null);
                             setBookingStep("seating");

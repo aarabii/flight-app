@@ -4,7 +4,6 @@ import { createClient } from "@/utils/supabase/server";
 import { SearchPanel } from "@/components/search-panel";
 import { HeroSection } from "@/components/hero-section";
 import Link from "next/link";
-import { PwaInstallToast } from "@/components/pwa-install-toast";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +12,7 @@ import {
   RiArrowRightUpLine,
   RiCalendarLine,
 } from "@remixicon/react";
+import type { User } from "@supabase/supabase-js";
 
 export const revalidate = 0;
 
@@ -29,13 +29,21 @@ interface FlightListing {
 
 export default async function HomePage() {
   // Preload primary hero LCP image immediately during SSR for highest network priority
-  preload("/FlyGo/1.jpg", { as: "image", fetchPriority: "high" });
+  preload("/FlyGo/1.webp", { as: "image", fetchPriority: "high" });
 
   let flights: FlightListing[] = [];
   let errorMsg: string | null = null;
+  let user: User | null = null;
 
   try {
     const supabase = await createClient();
+
+    // Retrieve the current user's session safely on the server
+    const {
+      data: { user: supabaseUser },
+    } = await supabase.auth.getUser();
+    user = supabaseUser;
+
     const nowIso = new Date().toISOString();
     const { data, error } = await supabase
       .from("flights")
@@ -307,18 +315,26 @@ export default async function HomePage() {
                           ₹{Number(flight.base_price).toLocaleString("en-IN")}
                         </p>
                       </div>
-                      <Link
-                        href={`/search?origin=${encodeURIComponent(flight.origin)}&destination=${encodeURIComponent(
+                      {(() => {
+                        const targetSearchUrl = `/search?origin=${encodeURIComponent(
+                          flight.origin,
+                        )}&destination=${encodeURIComponent(
                           flight.destination,
-                        )}&date=${depDate.toISOString().split("T")[0]}`}
-                      >
-                        <Button
-                          size="sm"
-                          className="font-semibold shadow shadow-primary/10 cursor-pointer"
-                        >
-                          Select Seating
-                        </Button>
-                      </Link>
+                        )}&date=${depDate.toISOString().split("T")[0]}`;
+                        const selectSeatingHref = user
+                          ? targetSearchUrl
+                          : `/auth/login?next=${encodeURIComponent(targetSearchUrl)}`;
+                        return (
+                          <Link href={selectSeatingHref}>
+                            <Button
+                              size="sm"
+                              className="font-semibold shadow shadow-primary/10 cursor-pointer"
+                            >
+                              Select Seating
+                            </Button>
+                          </Link>
+                        );
+                      })()}
                     </div>
                   </div>
                 );
@@ -327,7 +343,6 @@ export default async function HomePage() {
           )}
         </div>
       </section>
-      <PwaInstallToast />
     </div>
   );
 }
