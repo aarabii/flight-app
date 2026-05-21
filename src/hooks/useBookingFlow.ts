@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { toast } from "sonner";
 import { bookSeats } from "@/app/actions/book-seat";
 import {
   type BookingStep,
@@ -253,6 +254,11 @@ export function useBookingFlow({
       setBookingStep("confirmation");
       setActiveTicketIndex(0);
       setIsSubmitting(false);
+
+      const pnrList = dataList.map((d) => d.pnr_code).filter(Boolean).join(", ");
+      toast.success("Booking Confirmed!", {
+        description: `PNR: ${pnrList || "Confirmed"}. Your luxury visual seat booking is secure.`,
+      });
     } catch (err: unknown) {
       const message =
         err instanceof Error

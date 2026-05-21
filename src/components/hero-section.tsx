@@ -14,8 +14,10 @@ const HERO_IMAGES = [
 
 export function HeroSection() {
   const [currentIdx, setCurrentIdx] = React.useState(0);
+  const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
+    setMounted(true);
     const timer = setInterval(() => {
       setCurrentIdx((prev) => (prev + 1) % HERO_IMAGES.length);
     }, 5000);
@@ -25,22 +27,42 @@ export function HeroSection() {
   return (
     <section className="relative w-full min-h-80 md:min-h-125 py-24 md:py-32 overflow-hidden flex flex-col justify-center items-center">
       <div className="absolute inset-0 z-0 bg-zinc-950">
-        {HERO_IMAGES.map((src, idx) => (
-          <div
-            key={src}
-            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-              idx === currentIdx ? "opacity-100" : "opacity-0"
-            }`}
-          >
-            <Image
-              src={src}
-              alt={`FlyGo Travel Landscape ${idx + 1}`}
-              fill
-              priority={idx === 0}
-              className="object-cover blur-[3px] scale-105"
-            />
-          </div>
-        ))}
+        {/* Render the LCP image immediately with highest priority and unoptimized to match preload */}
+        <div
+          className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+            currentIdx === 0 ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          <Image
+            src={HERO_IMAGES[0]}
+            alt="FlyGo Travel Landscape 1"
+            fill
+            priority
+            unoptimized
+            className="object-cover blur-[3px] scale-105"
+          />
+        </div>
+
+        {/* Render remaining images only after mount to prevent unnecessary preloading & bandwidth competition */}
+        {mounted &&
+          HERO_IMAGES.slice(1).map((src, idx) => {
+            const actualIdx = idx + 1;
+            return (
+              <div
+                key={src}
+                className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                  actualIdx === currentIdx ? "opacity-100" : "opacity-0"
+                }`}
+              >
+                <Image
+                  src={src}
+                  alt={`FlyGo Travel Landscape ${actualIdx + 1}`}
+                  fill
+                  className="object-cover blur-[3px] scale-105"
+                />
+              </div>
+            );
+          })}
       </div>
 
       <div className="absolute inset-0 z-10 bg-linear-to-b from-zinc-950/60 via-zinc-950/45 to-zinc-950/70" />

@@ -34,7 +34,14 @@ export function InstallPwaBanner() {
     // Listen for beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      const promptEvent = e as BeforeInstallPromptEvent;
+      setDeferredPrompt(promptEvent);
+      
+      // Store globally for other components to access (e.g. desktop landing page toast)
+      if (typeof window !== "undefined") {
+        (window as any).deferredAppInstallPrompt = promptEvent;
+        window.dispatchEvent(new CustomEvent("pwa-prompt-available", { detail: promptEvent }));
+      }
       
       // Show only on mobile screens (less than 768px wide)
       const isMobile = window.innerWidth < 768;

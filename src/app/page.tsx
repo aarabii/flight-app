@@ -1,8 +1,10 @@
 import * as React from "react";
+import { preload } from "react-dom";
 import { createClient } from "@/utils/supabase/server";
 import { SearchPanel } from "@/components/search-panel";
 import { HeroSection } from "@/components/hero-section";
 import Link from "next/link";
+import { PwaInstallToast } from "@/components/pwa-install-toast";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +28,9 @@ interface FlightListing {
 }
 
 export default async function HomePage() {
+  // Preload primary hero LCP image immediately during SSR for highest network priority
+  preload("/FlyGo/1.jpg", { as: "image", fetchPriority: "high" } as any);
+
   let flights: FlightListing[] = [];
   let errorMsg: string | null = null;
 
@@ -322,6 +327,7 @@ export default async function HomePage() {
           )}
         </div>
       </section>
+      <PwaInstallToast />
     </div>
   );
 }

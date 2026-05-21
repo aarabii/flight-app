@@ -131,3 +131,43 @@
     @apply font-sans;
   }
 }
+
+/* Premium high-contrast toast styling overrides */
+[data-sonner-toast] {
+  background-color: var(--popover) !important;
+  border-color: var(--border) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+[data-sonner-toast] [data-title] {
+  color: var(--foreground) !important;
+  font-weight: 700 !important;
+  font-size: 0.875rem !important;
+}
+
+[data-sonner-toast] [data-description] {
+  color: oklch(0.45 0.2 320) !important; /* Beautiful deep brand purple in light mode */
+  font-weight: 600 !important;
+  font-size: 0.75rem !important;
+  opacity: 1 !important;
+}
+
+.dark [data-sonner-toast] [data-description] {
+  color: oklch(0.8 0.12 320) !important; /* Gorgeous soft violet in dark mode */
+}
+
+[data-sonner-toast] [data-button] {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  font-weight: 600 !important;
+  border-radius: var(--radius) !important;
+  cursor: pointer !important;
+}
+
+[data-sonner-toast] [data-cancel] {
+  background-color: var(--secondary) !important;
+  color: var(--secondary-foreground) !important;
+  font-weight: 600 !important;
+  border-radius: var(--radius) !important;
+  cursor: pointer !important;
+}

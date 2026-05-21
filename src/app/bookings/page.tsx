@@ -43,6 +43,7 @@ import { useStoreHydration } from "@/store/useStoreHydration";
 import { cancelBooking } from "@/app/actions/cancel-booking";
 import { rescheduleBooking } from "@/app/actions/reschedule-booking";
 import { SearchPanel } from "@/components/search-panel";
+import { toast } from "sonner";
 
 type RescheduleFlight = Required<
   Pick<
@@ -126,11 +127,7 @@ export default function BookingsPage() {
   const [bookings, setBookings] = React.useState<CachedBooking[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
-  const [toastMessage, setToastMessage] = React.useState<string | null>(null);
   const [currentTime, setCurrentTime] = React.useState(() => new Date());
-  const [cancelRuleMessage, setCancelRuleMessage] = React.useState<
-    string | null
-  >(null);
   const [isOffline, setIsOffline] = React.useState(false);
 
   React.useEffect(() => {
@@ -150,7 +147,6 @@ export default function BookingsPage() {
     React.useState<CachedBooking | null>(null);
   const [isCancelling, setIsCancelling] = React.useState(false);
   const [cancelError, setCancelError] = React.useState<string | null>(null);
-  const [cancelSuccess, setCancelSuccess] = React.useState(false);
 
   // Reschedule Dialog states
   const [reschedulingBooking, setReschedulingBooking] =
@@ -258,8 +254,8 @@ export default function BookingsPage() {
       setCancelError(result.error);
       setIsCancelling(false);
     } else {
-      setCancelSuccess(true);
       setIsCancelling(false);
+      setCancellingBooking(null);
 
       // FIX 5 (F11) — Reset Zustand store after successful cancel
       resetBookingFlow();
@@ -272,12 +268,11 @@ export default function BookingsPage() {
         ),
       );
 
-      // Refresh local listings after slight delay
-      setTimeout(() => {
-        setCancellingBooking(null);
-        setCancelSuccess(false);
-        fetchBookings();
-      }, 1500);
+      toast.success("Ticket Cancelled", {
+        description: "Seat released successfully!",
+      });
+
+      fetchBookings();
     }
   };
 
@@ -288,16 +283,6 @@ export default function BookingsPage() {
 
     return () => window.clearInterval(intervalId);
   }, []);
-
-  React.useEffect(() => {
-    if (!toastMessage) return;
-
-    const timeoutId = window.setTimeout(() => {
-      setToastMessage(null);
-    }, 3500);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [toastMessage]);
 
   React.useEffect(() => {
     if (!isRescheduleDialogOpen || !reschedulingBooking) {
@@ -428,7 +413,9 @@ export default function BookingsPage() {
     );
 
     updateCachedBookingStatus(reschedulingBooking.id, "rescheduled");
-    setToastMessage(`Booking rescheduled. ${feeLabel}`);
+    toast.success("Booking Rescheduled", {
+      description: feeLabel,
+    });
     closeRescheduleDialog();
     fetchBookings();
   };
@@ -564,7 +551,7 @@ export default function BookingsPage() {
               );
 
               const isCancelled = booking.status === "cancelled";
-              const canReschedule = booking.status === "confirmed";
+              const canReschedule = booking.status === "confirmed" || booking.status === "rescheduled";
 
               const departsMs = flight?.departs_at
                 ? new Date(flight.departs_at).getTime()
@@ -766,16 +753,18 @@ export default function BookingsPage() {
                               }}
                               className="w-full md:w-auto text-xs border-primary/20 text-primary hover:bg-primary/5 cursor-pointer"
                             >
-                              Reschedule
+                              {booking.status === "rescheduled" ? "Reschedule Again" : "Reschedule"}
                             </Button>
 
                             {cancellationLockMessage ? (
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() =>
-                                  setCancelRuleMessage(cancellationLockMessage)
-                                }
+                                onClick={() => {
+                                  toast.error("Cancellation Locked", {
+                                    description: cancellationLockMessage,
+                                  });
+                                }}
                                 className="w-full md:w-auto text-xs text-destructive hover:bg-destructive/5 hover:text-destructive border-destructive/20 cursor-pointer"
                               >
                                 Cancel Booking
@@ -789,7 +778,6 @@ export default function BookingsPage() {
                                     onClick={() => {
                                       setCancellingBooking(booking);
                                       setCancelError(null);
-                                      setCancelSuccess(false);
                                     }}
                                     className="w-full md:w-auto text-xs text-destructive hover:bg-destructive/5 hover:text-destructive border-destructive/20 cursor-pointer"
                                   >
@@ -814,16 +802,6 @@ export default function BookingsPage() {
                                     </div>
                                   )}
 
-                                  {cancelSuccess && (
-                                    <div className="flex items-center gap-2 rounded-lg bg-green-500/10 p-3 text-xs text-green-600 dark:text-green-400 border border-green-500/20 font-medium">
-                                      <RiCheckDoubleLine className="h-4 w-4 shrink-0" />
-                                      <span>
-                                        Ticket cancelled. Seat released
-                                        successfully!
-                                      </span>
-                                    </div>
-                                  )}
-
                                   <div className="py-2 text-xs text-zinc-500 dark:text-zinc-400 space-y-1 bg-zinc-50 dark:bg-zinc-900 p-3 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50">
                                     <p className="font-bold text-zinc-700 dark:text-zinc-300">
                                       Cancellation Rule Checklist:
@@ -844,7 +822,7 @@ export default function BookingsPage() {
                                     </AlertDialogCancel>
                                     <AlertDialogAction
                                       onClick={handleCancelConfirm}
-                                      disabled={isCancelling || cancelSuccess}
+                                      disabled={isCancelling}
                                       className="font-semibold cursor-pointer"
                                     >
                                       {isCancelling ? (
@@ -883,24 +861,7 @@ export default function BookingsPage() {
           </div>
         </div>
       )}
-      <Dialog
-        open={Boolean(cancelRuleMessage)}
-        onOpenChange={(open) => {
-          if (!open) {
-            setCancelRuleMessage(null);
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Cancellation window closed</DialogTitle>
-            <DialogDescription>{cancelRuleMessage}</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button onClick={() => setCancelRuleMessage(null)}>Okay</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
 
       <Dialog
         open={isRescheduleDialogOpen}
@@ -1052,14 +1013,6 @@ export default function BookingsPage() {
         </DialogContent>
       </Dialog>
 
-      {toastMessage && (
-        <div
-          className="fixed right-4 top-4 z-50 max-w-sm rounded-lg border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm text-green-700 shadow-lg shadow-black/5 backdrop-blur dark:text-green-400"
-          aria-live="polite"
-        >
-          {toastMessage}
-        </div>
-      )}
     </div>
   );
 }

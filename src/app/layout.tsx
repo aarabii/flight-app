@@ -4,8 +4,7 @@ import { cn } from "@/lib/utils";
 import { Navbar } from "@/components/navbar";
 import Link from "next/link";
 import { InstallPwaBanner } from "@/components/install-pwa-banner";
-import { PwaInstallToast } from "@/components/pwa-install-toast";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "FlyGo Airlines - Premium Flight Booking",
@@ -38,7 +37,6 @@ export default function RootLayout({
           </div>
         </footer>
         <InstallPwaBanner />
-        <PwaInstallToast />
         <Toaster />
       </body>
     </html>
