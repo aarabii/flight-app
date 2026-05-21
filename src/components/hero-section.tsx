@@ -4,12 +4,12 @@ import * as React from "react";
 import Image from "next/image";
 
 const HERO_IMAGES = [
-  "/FlyGo/1.jpg",
-  "/FlyGo/2.jpg",
-  "/FlyGo/3.jpg",
-  "/FlyGo/4.jpg",
-  "/FlyGo/5.jpg",
-  "/FlyGo/6.jpg",
+  "/FlyGo/1.webp",
+  "/FlyGo/2.webp",
+  "/FlyGo/3.webp",
+  "/FlyGo/4.webp",
+  "/FlyGo/5.webp",
+  "/FlyGo/6.webp",
 ];
 
 export function HeroSection() {
@@ -27,7 +27,6 @@ export function HeroSection() {
   return (
     <section className="relative w-full min-h-80 md:min-h-125 py-24 md:py-32 overflow-hidden flex flex-col justify-center items-center">
       <div className="absolute inset-0 z-0 bg-zinc-950">
-        {/* Render the LCP image immediately with highest priority and unoptimized to match preload */}
         <div
           className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
             currentIdx === 0 ? "opacity-100" : "opacity-0"
@@ -43,7 +42,6 @@ export function HeroSection() {
           />
         </div>
 
-        {/* Render remaining images only after mount to prevent unnecessary preloading & bandwidth competition */}
         {mounted &&
           HERO_IMAGES.slice(1).map((src, idx) => {
             const actualIdx = idx + 1;
@@ -56,6 +54,7 @@ export function HeroSection() {
               >
                 <Image
                   src={src}
+                  fetchPriority="high"
                   alt={`FlyGo Travel Landscape ${actualIdx + 1}`}
                   fill
                   className="object-cover blur-[3px] scale-105"

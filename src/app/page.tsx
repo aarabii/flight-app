@@ -64,7 +64,7 @@ export default async function HomePage() {
       destination: "LHR (Heathrow T5)",
       tag: "Royal Charm",
       color: "from-blue-600/30 to-indigo-600/30",
-      image: "/hub/london.jpg",
+      image: "/hub/london.webp",
       dotColor: "bg-blue-400",
       hoverGlow:
         "hover:shadow-[0_0_30px_rgba(59,130,246,0.25)] hover:border-blue-500/30",
@@ -75,7 +75,7 @@ export default async function HomePage() {
       destination: "DXB (Dubai T3)",
       tag: "Futuristic Luxury",
       color: "from-amber-600/30 to-orange-600/30",
-      image: "/hub/dubai.jpg",
+      image: "/hub/dubai.webp",
       dotColor: "bg-amber-400",
       hoverGlow:
         "hover:shadow-[0_0_30px_rgba(245,158,11,0.25)] hover:border-amber-500/30",
@@ -86,7 +86,7 @@ export default async function HomePage() {
       destination: "NRT (Narita T1)",
       tag: "Zen Heritage",
       color: "from-rose-600/30 to-red-600/30",
-      image: "/hub/tokyo.jpg",
+      image: "/hub/tokyo.webp",
       dotColor: "bg-rose-400",
       hoverGlow:
         "hover:shadow-[0_0_30px_rgba(244,63,94,0.25)] hover:border-rose-500/30",
@@ -97,7 +97,7 @@ export default async function HomePage() {
       destination: "JFK (Kennedy T8)",
       tag: "Urban Horizon",
       color: "from-purple-600/30 to-indigo-600/30",
-      image: "/hub/newyork.jpg",
+      image: "/hub/newyork.webp",
       dotColor: "bg-purple-400",
       hoverGlow:
         "hover:shadow-[0_0_30px_rgba(168,85,247,0.25)] hover:border-purple-500/30",
@@ -133,11 +133,11 @@ export default async function HomePage() {
               href={`/search?mode=hub&destination=${encodeURIComponent(hub.destination)}`}
               className={`group relative overflow-hidden rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 p-6 h-72 flex flex-col justify-between transition-all duration-500 hover:-translate-y-2 bg-zinc-950 text-white ${hub.hoverGlow}`}
             >
-              {/* Blurred Image Background with Premium overlay */}
               <div className="absolute inset-0 z-0 overflow-hidden">
                 <Image
                   src={hub.image}
                   alt={hub.city}
+                  fetchPriority="high"
                   fill
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                   className="object-cover blur-[2px] scale-105 transition-all duration-700 ease-out group-hover:scale-110 group-hover:blur-0"
