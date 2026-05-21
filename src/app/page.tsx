@@ -3,6 +3,7 @@ import { preload } from "react-dom";
 import { createClient } from "@/utils/supabase/server";
 import { SearchPanel } from "@/components/search-panel";
 import { HeroSection } from "@/components/hero-section";
+import { PwaInstallToast } from "@/components/pwa-install-toast";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -119,6 +120,9 @@ export default async function HomePage() {
       <section className="container mx-auto px-4 md:px-6 relative z-10">
         <SearchPanel />
       </section>
+
+      {/* PWA Install Toast (landing page only) */}
+      <PwaInstallToast />
 
       <section className="container mx-auto px-4 md:px-6 py-20 space-y-12">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">

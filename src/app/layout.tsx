@@ -3,7 +3,6 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Navbar } from "@/components/navbar";
 import Link from "next/link";
-import { InstallPwaBanner } from "@/components/install-pwa-banner";
 import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
@@ -36,7 +35,6 @@ export default function RootLayout({
             </p>
           </div>
         </footer>
-        <InstallPwaBanner />
         <Toaster />
       </body>
     </html>
