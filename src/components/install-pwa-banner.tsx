@@ -119,7 +119,7 @@ export function InstallPwaBanner() {
             <RiDownloadCloud2Line className="mr-1 h-3.5 w-3.5" />
             Install
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleDismiss} className="h-8 w-8 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer">
+          <Button variant="ghost" size="icon" onClick={handleDismiss} aria-label="Dismiss install banner" className="h-8 w-8 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer">
             <RiCloseLine className="h-4 w-4" />
           </Button>
         </div>

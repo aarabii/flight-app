@@ -477,9 +477,9 @@ export default function BookingsPage() {
                 <RiTicketLine className="h-6 w-6" />
               </div>
               <div className="space-y-1.5 max-w-sm mx-auto">
-                <h3 className="text-lg font-bold font-heading">
+                <h2 className="text-lg font-bold font-heading">
                   You don&apos;t have any bookings
-                </h3>
+                </h2>
                 <p className="text-xs text-zinc-500 leading-relaxed">
                   Book now to create your first visual seat booking and flight
                   itinerary.
@@ -509,7 +509,11 @@ export default function BookingsPage() {
           </div>
         </div>
       ) : (
-        <div className="space-y-12">
+        <div className="space-y-6">
+          <h2 className="text-xl font-bold tracking-tight font-heading flex items-center gap-2">
+            <RiTicketLine className="h-5 w-5 text-primary" />
+            Your Active Bookings ({bookings.length})
+          </h2>
           <div className="grid grid-cols-1 gap-6">
             {bookings.map((booking) => {
               const flight = Array.isArray(booking.flights)

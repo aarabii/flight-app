@@ -355,10 +355,11 @@ export function SeatMapContainer({
                     )}
 
                     <div className="space-y-1">
-                      <label className="text-xs font-semibold text-zinc-500 flex items-center gap-1">
+                      <label htmlFor={`passenger-${index}-name`} className="text-xs font-semibold text-zinc-500 flex items-center gap-1">
                         <RiUserLine className="h-3.5 w-3.5" /> Full Name
                       </label>
                       <Input
+                        id={`passenger-${index}-name`}
                         placeholder="Passenger full name (matches passport)"
                         value={passenger.fullName}
                         onChange={(e) =>
@@ -381,11 +382,12 @@ export function SeatMapContainer({
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-semibold text-zinc-500 flex items-center gap-1">
+                      <label htmlFor={`passenger-${index}-passport`} className="text-xs font-semibold text-zinc-500 flex items-center gap-1">
                         <RiPassportLine className="h-3.5 w-3.5" /> Passport
                         Number
                       </label>
                       <Input
+                        id={`passenger-${index}-passport`}
                         placeholder="Z1234567"
                         value={passenger.passportNo}
                         onChange={(e) =>
@@ -408,10 +410,11 @@ export function SeatMapContainer({
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-semibold text-zinc-500 flex items-center gap-1">
+                      <label htmlFor={`passenger-${index}-nationality`} className="text-xs font-semibold text-zinc-500 flex items-center gap-1">
                         <RiFlagLine className="h-3.5 w-3.5" /> Nationality
                       </label>
                       <Input
+                        id={`passenger-${index}-nationality`}
                         placeholder="Indian"
                         value={passenger.nationality}
                         onChange={(e) =>
@@ -434,10 +437,11 @@ export function SeatMapContainer({
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-semibold text-zinc-500 flex items-center gap-1">
+                      <label htmlFor={`passenger-${index}-dob`} className="text-xs font-semibold text-zinc-500 flex items-center gap-1">
                         <RiCalendarLine className="h-3.5 w-3.5" /> Date of Birth
                       </label>
                       <Input
+                        id={`passenger-${index}-dob`}
                         type="date"
                         value={passenger.dob}
                         onChange={(e) =>

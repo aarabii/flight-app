@@ -122,12 +122,13 @@ export function SearchPanel({ className }: SearchPanelProps = {}) {
             
             {/* Origin Selection */}
             <div className="space-y-1.5 flex-1">
-              <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+              <label htmlFor="origin-select" className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
                 <RiPlaneLine className="h-3.5 w-3.5 text-primary transform rotate-45" />
                 From
               </label>
               <div className="relative">
                 <select
+                  id="origin-select"
                   value={origin}
                   onChange={(e) => setOrigin(e.target.value)}
                   className="w-full h-11 px-3 py-2 text-sm rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none cursor-pointer"
@@ -148,12 +149,13 @@ export function SearchPanel({ className }: SearchPanelProps = {}) {
 
             {/* Destination Selection */}
             <div className="space-y-1.5 flex-1">
-              <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+              <label htmlFor="destination-select" className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
                 <RiPlaneLine className="h-3.5 w-3.5 text-primary transform rotate-90" />
                 To
               </label>
               <div className="relative">
                 <select
+                  id="destination-select"
                   value={destination}
                   onChange={(e) => setDestination(e.target.value)}
                   className="w-full h-11 px-3 py-2 text-sm rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none cursor-pointer"
@@ -205,12 +207,13 @@ export function SearchPanel({ className }: SearchPanelProps = {}) {
 
             {/* Travel Class Selection */}
             <div className="space-y-1.5 flex-1">
-              <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+              <label htmlFor="class-select" className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
                 <RiUserAddLine className="h-3.5 w-3.5 text-primary" />
                 Travel Class
               </label>
               <div className="relative">
                 <select
+                  id="class-select"
                   value={travelerClass}
                   onChange={(e) => setTravelerClass(e.target.value)}
                   className="w-full h-11 px-3 py-2 text-sm rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none cursor-pointer"
@@ -229,7 +232,7 @@ export function SearchPanel({ className }: SearchPanelProps = {}) {
 
             {/* Passenger Count */}
             <div className="space-y-1.5 flex-1">
-              <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+              <label htmlFor="passenger-select-trigger" className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
                 <RiGroupLine className="h-3.5 w-3.5 text-primary" />
                 Passengers
               </label>
@@ -237,7 +240,7 @@ export function SearchPanel({ className }: SearchPanelProps = {}) {
                 value={String(passengerCount)}
                 onValueChange={(val) => setPassengerCount(parseInt(val))}
               >
-                <SelectTrigger className="w-full h-11 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-sm font-medium text-zinc-800 dark:text-zinc-200 cursor-pointer">
+                <SelectTrigger id="passenger-select-trigger" aria-label="Passengers" className="w-full h-11 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-sm font-medium text-zinc-800 dark:text-zinc-200 cursor-pointer">
                   <SelectValue placeholder="Passengers" />
                 </SelectTrigger>
                 <SelectContent>

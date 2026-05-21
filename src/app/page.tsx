@@ -158,7 +158,7 @@ export default async function HomePage() {
                 <h3 className="text-3xl font-extrabold font-heading mt-4 text-transparent bg-clip-text bg-linear-to-r from-white via-zinc-100 to-zinc-300 tracking-tight leading-none drop-shadow-md group-hover:from-white group-hover:to-white transition-all duration-300">
                   {hub.city}
                 </h3>
-                <p className="text-xs text-secondry mt-1.5 font-medium leading-relaxed drop-shadow-sm group-hover:text-zinc-200 transition-colors">
+                <p className="text-xs text-zinc-300/90 mt-1.5 font-medium leading-relaxed drop-shadow-sm group-hover:text-zinc-200 transition-colors">
                   {hub.airport}
                 </p>
               </div>

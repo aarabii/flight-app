@@ -313,14 +313,14 @@ export function FlightResults({
                 {/* Aircraft Type Filter */}
                 {uniqueAircrafts.length > 1 && (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-500">
+                    <label htmlFor="aircraft-filter" className="text-xs font-semibold text-zinc-400 dark:text-zinc-500">
                       Aircraft:
-                    </span>
+                    </label>
                     <Select
                       value={selectedAircraft}
                       onValueChange={setSelectedAircraft}
                     >
-                      <SelectTrigger className="w-[140px] h-8 text-xs border border-zinc-200/60 dark:border-zinc-800/60 bg-white/70 dark:bg-zinc-900/70 cursor-pointer rounded-lg px-2">
+                      <SelectTrigger id="aircraft-filter" aria-label="Aircraft filter" className="w-[140px] h-8 text-xs border border-zinc-200/60 dark:border-zinc-800/60 bg-white/70 dark:bg-zinc-900/70 cursor-pointer rounded-lg px-2">
                         <SelectValue placeholder="All Aircrafts" />
                       </SelectTrigger>
                       <SelectContent className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg">
@@ -337,11 +337,11 @@ export function FlightResults({
 
                 {/* Sort Option */}
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-500">
+                  <label htmlFor="sort-filter" className="text-xs font-semibold text-zinc-400 dark:text-zinc-500">
                     Sort By:
-                  </span>
+                  </label>
                   <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="w-[180px] h-8 text-xs border border-zinc-200/60 dark:border-zinc-800/60 bg-white/70 dark:bg-zinc-900/70 cursor-pointer rounded-lg px-2">
+                    <SelectTrigger id="sort-filter" aria-label="Sort by" className="w-[180px] h-8 text-xs border border-zinc-200/60 dark:border-zinc-800/60 bg-white/70 dark:bg-zinc-900/70 cursor-pointer rounded-lg px-2">
                       <SelectValue placeholder="Sort by..." />
                     </SelectTrigger>
                     <SelectContent className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg">
@@ -403,9 +403,9 @@ export function FlightResults({
                         <span className="inline-flex px-2.5 py-0.5 rounded-full bg-primary/10 text-xs font-bold text-primary">
                           {flight.flight_no}
                         </span>
-                        <h4 className="text-base font-bold text-zinc-800 dark:text-zinc-200">
+                        <h3 className="text-base font-bold text-zinc-800 dark:text-zinc-200">
                           {flight.flight_no}
-                        </h4>
+                        </h3>
                         <p className="text-xs text-zinc-400 dark:text-zinc-500 flex items-center gap-1.5">
                           <RiPlaneLine className="h-3.5 w-3.5" />
                           {flight.aircraft_type}
