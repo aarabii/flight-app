@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
+
 import { cn } from "@/lib/utils";
 import { Navbar } from "@/components/navbar";
 import Link from "next/link";
 import { Toaster } from "@/components/ui/sonner";
+import { PWAInstallToast } from "@/components/pwa-install-toast";
 
 export const metadata: Metadata = {
   title: "FlyGo Airlines - Premium Flight Booking",
@@ -36,6 +38,7 @@ export default function RootLayout({
           </div>
         </footer>
         <Toaster />
+        <PWAInstallToast />
       </body>
     </html>
   );

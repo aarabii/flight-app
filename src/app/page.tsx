@@ -1,9 +1,10 @@
-import * as React from "react";
+// "use client";
+
+// import { useState, useEffect } from "react";
 import { preload } from "react-dom";
 import { createClient } from "@/utils/supabase/server";
 import { SearchPanel } from "@/components/search-panel";
 import { HeroSection } from "@/components/hero-section";
-import { PwaInstallToast } from "@/components/pwa-install-toast";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,6 @@ interface FlightListing {
 }
 
 export default async function HomePage() {
-  // Preload primary hero LCP image immediately during SSR for highest network priority
   preload("/FlyGo/1.webp", { as: "image", fetchPriority: "high" });
 
   let flights: FlightListing[] = [];
@@ -39,7 +39,6 @@ export default async function HomePage() {
   try {
     const supabase = await createClient();
 
-    // Retrieve the current user's session safely on the server
     const {
       data: { user: supabaseUser },
     } = await supabase.auth.getUser();
@@ -120,9 +119,6 @@ export default async function HomePage() {
       <section className="container mx-auto px-4 md:px-6 relative z-10">
         <SearchPanel />
       </section>
-
-      {/* PWA Install Toast (landing page only) */}
-      <PwaInstallToast />
 
       <section className="container mx-auto px-4 md:px-6 py-20 space-y-12">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
