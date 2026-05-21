@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 import withPWA from "next-pwa";
 
 const nextConfig: NextConfig = {
+  images: {
+    formats: ["image/avif", "image/webp"],
+  },
   experimental: {
     optimizePackageImports: ["@remixicon/react"],
   },

@@ -4,7 +4,12 @@ import * as React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { SeatMapContainer } from "@/components/seat-map-container";
+import dynamic from "next/dynamic";
+
+const SeatMapContainer = dynamic(
+  () => import("@/components/seat-map-container").then((mod) => mod.SeatMapContainer),
+  { ssr: false }
+);
 import { SearchPanel } from "@/components/search-panel";
 import {
   Select,

@@ -145,7 +145,6 @@ export default async function HomePage() {
                 <Image
                   src={hub.image}
                   alt={hub.city}
-                  fetchPriority="high"
                   fill
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                   className="object-cover blur-[2px] scale-105 transition-all duration-700 ease-out group-hover:scale-110 group-hover:blur-0"

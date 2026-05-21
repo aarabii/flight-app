@@ -37,7 +37,7 @@ export function HeroSection() {
             alt="FlyGo Travel Landscape 1"
             fill
             priority
-            unoptimized
+            sizes="100vw"
             className="object-cover blur-[3px] scale-105"
           />
         </div>
@@ -54,9 +54,9 @@ export function HeroSection() {
               >
                 <Image
                   src={src}
-                  fetchPriority="high"
                   alt={`FlyGo Travel Landscape ${actualIdx + 1}`}
                   fill
+                  sizes="100vw"
                   className="object-cover blur-[3px] scale-105"
                 />
               </div>
