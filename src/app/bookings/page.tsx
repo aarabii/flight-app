@@ -31,6 +31,7 @@ import {
   RiLoader4Line,
   RiAlertFill,
   RiCheckDoubleLine,
+  RiSignalWifiOffLine,
 } from "@remixicon/react";
 import {
   type CachedBooking,
@@ -130,6 +131,19 @@ export default function BookingsPage() {
   const [cancelRuleMessage, setCancelRuleMessage] = React.useState<
     string | null
   >(null);
+  const [isOffline, setIsOffline] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsOffline(!navigator.onLine);
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   // Cancellation Dialog states
   const [cancellingBooking, setCancellingBooking] =
@@ -157,6 +171,10 @@ export default function BookingsPage() {
 
   // Fetch traveler bookings from Supabase
   const fetchBookings = React.useCallback(async () => {
+    if (!navigator.onLine) {
+      setIsLoading(false);
+      return;
+    }
     // Only show page loading spinner if we don't have any cached bookings to show first
     if (cachedBookings.length === 0 && bookings.length === 0) {
       setIsLoading(true);
@@ -442,6 +460,15 @@ export default function BookingsPage() {
           </Button>
         </Link>
       </div>
+
+      {isOffline && (
+        <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 flex items-center gap-3 text-amber-700 dark:text-amber-400 shadow-sm animate-pulse">
+          <RiSignalWifiOffLine className="h-5 w-5 shrink-0" />
+          <div className="text-xs font-semibold">
+            Offline Mode Active — Displaying your last synced travel itineraries.
+          </div>
+        </div>
+      )}
 
       {/* Main Listing Panel */}
       {isLoading ? (
