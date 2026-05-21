@@ -58,7 +58,7 @@ export function PwaInstallToast() {
     };
 
     // 1. Check if the prompt was already captured globally
-    const existingPrompt = typeof window !== "undefined" ? (window as any).deferredAppInstallPrompt : null;
+    const existingPrompt = typeof window !== "undefined" ? (window as Window & { deferredAppInstallPrompt?: BeforeInstallPromptEvent | null }).deferredAppInstallPrompt : null;
     if (existingPrompt) {
       triggerToast(existingPrompt);
       return;

@@ -26,7 +26,7 @@ export function InstallPwaBanner() {
     // Check if app is running in standalone mode (already installed)
     const isStandalone = typeof window !== "undefined" && (
       window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as any).standalone ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone ||
       document.referrer.includes("android-app://")
     );
     if (isStandalone) return;
@@ -39,7 +39,7 @@ export function InstallPwaBanner() {
       
       // Store globally for other components to access (e.g. desktop landing page toast)
       if (typeof window !== "undefined") {
-        (window as any).deferredAppInstallPrompt = promptEvent;
+        (window as Window & { deferredAppInstallPrompt?: BeforeInstallPromptEvent | null }).deferredAppInstallPrompt = promptEvent;
         window.dispatchEvent(new CustomEvent("pwa-prompt-available", { detail: promptEvent }));
       }
       
@@ -56,7 +56,7 @@ export function InstallPwaBanner() {
     const handleResize = () => {
       const isMobile = window.innerWidth < 768;
       const isDismissedCheck = localStorage.getItem("flygo-pwa-dismissed") === "true";
-      const isStandaloneCheck = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone;
+      const isStandaloneCheck = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as Navigator & { standalone?: boolean }).standalone;
       if (deferredPrompt && isMobile && !isDismissedCheck && !isStandaloneCheck) {
         setIsVisible(true);
       } else {

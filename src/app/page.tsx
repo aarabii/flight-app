@@ -29,7 +29,7 @@ interface FlightListing {
 
 export default async function HomePage() {
   // Preload primary hero LCP image immediately during SSR for highest network priority
-  preload("/FlyGo/1.jpg", { as: "image", fetchPriority: "high" } as any);
+  preload("/FlyGo/1.jpg", { as: "image", fetchPriority: "high" });
 
   let flights: FlightListing[] = [];
   let errorMsg: string | null = null;
