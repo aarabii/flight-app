@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { SearchPanel } from "@/components/search-panel";
 import { HeroSection } from "@/components/hero-section";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   RiPlaneLine,
@@ -57,28 +58,44 @@ export default async function HomePage() {
       airport: "Heathrow (LHR T5)",
       destination: "LHR (Heathrow T5)",
       tag: "Royal Charm",
-      color: "from-blue-600/20 to-indigo-600/20",
+      color: "from-blue-600/30 to-indigo-600/30",
+      image: "/hub/london.jpg",
+      dotColor: "bg-blue-400",
+      hoverGlow:
+        "hover:shadow-[0_0_30px_rgba(59,130,246,0.25)] hover:border-blue-500/30",
     },
     {
       city: "Dubai",
       airport: "Dubai Intl (DXB T3)",
       destination: "DXB (Dubai T3)",
       tag: "Futuristic Luxury",
-      color: "from-amber-600/20 to-orange-600/20",
+      color: "from-amber-600/30 to-orange-600/30",
+      image: "/hub/dubai.jpg",
+      dotColor: "bg-amber-400",
+      hoverGlow:
+        "hover:shadow-[0_0_30px_rgba(245,158,11,0.25)] hover:border-amber-500/30",
     },
     {
       city: "Tokyo",
       airport: "Narita Airport (NRT T1)",
       destination: "NRT (Narita T1)",
       tag: "Zen Heritage",
-      color: "from-rose-600/20 to-red-600/20",
+      color: "from-rose-600/30 to-red-600/30",
+      image: "/hub/tokyo.jpg",
+      dotColor: "bg-rose-400",
+      hoverGlow:
+        "hover:shadow-[0_0_30px_rgba(244,63,94,0.25)] hover:border-rose-500/30",
     },
     {
       city: "New York",
       airport: "JFK Intl (JFK T8)",
       destination: "JFK (Kennedy T8)",
       tag: "Urban Horizon",
-      color: "from-purple-600/20 to-indigo-600/20",
+      color: "from-purple-600/30 to-indigo-600/30",
+      image: "/hub/newyork.jpg",
+      dotColor: "bg-purple-400",
+      hoverGlow:
+        "hover:shadow-[0_0_30px_rgba(168,85,247,0.25)] hover:border-purple-500/30",
     },
   ];
 
@@ -109,26 +126,43 @@ export default async function HomePage() {
             <Link
               key={hub.city}
               href={`/search?mode=hub&destination=${encodeURIComponent(hub.destination)}`}
-              className={`group relative overflow-hidden rounded-xl border border-zinc-200/60 dark:border-zinc-800/60 bg-gradient-to-b ${hub.color} p-6 h-60 flex flex-col justify-between transition-all duration-300 hover:shadow-xl hover:-translate-y-1`}
+              className={`group relative overflow-hidden rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 p-6 h-72 flex flex-col justify-between transition-all duration-500 hover:-translate-y-2 bg-zinc-950 text-white ${hub.hoverGlow}`}
             >
-              <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full pointer-events-none group-hover:scale-110 transition-transform duration-300" />
-              <div>
-                <span className="inline-flex px-2.5 py-0.5 rounded-full bg-white/60 dark:bg-zinc-800/60 border border-zinc-200/30 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+              {/* Blurred Image Background with Premium overlay */}
+              <div className="absolute inset-0 z-0 overflow-hidden">
+                <Image
+                  src={hub.image}
+                  alt={hub.city}
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                  className="object-cover blur-[2px] scale-105 transition-all duration-700 ease-out group-hover:scale-110 group-hover:blur-0"
+                />
+                <div
+                  className={`absolute inset-0 bg-linear-to-b ${hub.color} mix-blend-overlay opacity-60`}
+                />
+                <div className="absolute inset-0 bg-linear-to-b from-black/50 via-black/25 to-black/85 group-hover:from-black/60 group-hover:via-black/30 group-hover:to-black/90 transition-colors duration-500" />
+              </div>
+
+              <div className="relative z-10 flex flex-col items-start">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-[10px] tracking-wider uppercase font-bold text-white shadow-sm">
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${hub.dotColor} animate-pulse`}
+                  />
                   {hub.tag}
                 </span>
-                <h3 className="text-2xl font-bold font-heading mt-3 text-zinc-900 dark:text-zinc-50">
+                <h3 className="text-3xl font-extrabold font-heading mt-4 text-transparent bg-clip-text bg-linear-to-r from-white via-zinc-100 to-zinc-300 tracking-tight leading-none drop-shadow-md group-hover:from-white group-hover:to-white transition-all duration-300">
                   {hub.city}
                 </h3>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                <p className="text-xs text-secondry mt-1.5 font-medium leading-relaxed drop-shadow-sm group-hover:text-zinc-200 transition-colors">
                   {hub.airport}
                 </p>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-primary dark:text-purple-400">
+              <div className="relative z-10 flex items-center justify-between">
+                <span className="text-xs font-semibold tracking-wide uppercase text-zinc-300 group-hover:text-white transition-colors duration-300">
                   View schedules
                 </span>
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white dark:bg-zinc-900 shadow-md group-hover:bg-primary group-hover:text-white transition-colors">
-                  <RiArrowRightUpLine className="h-4 w-4" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 backdrop-blur-md border border-white/10 text-white shadow-lg group-hover:bg-primary group-hover:text-white group-hover:border-primary group-hover:scale-110 group-hover:rotate-45 transition-all duration-300">
+                  <RiArrowRightUpLine className="h-5 w-5" />
                 </div>
               </div>
             </Link>
