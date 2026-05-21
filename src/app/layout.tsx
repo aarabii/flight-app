@@ -11,6 +11,16 @@ export const metadata: Metadata = {
   title: "FlyGo Airlines - Premium Flight Booking",
   description:
     "Experience premium air travel with FlyGo. Search flights, select visual seat maps, and manage your luxury travel itineraries seamlessly.",
+  icons: {
+    icon: "/logo.png",
+  },
+  authors: [
+    {
+      name: "Aarab",
+      url: "https://aarab.vercel.app",
+    },
+  ],
+  creator: "Aarab",
 };
 
 export default function RootLayout({
